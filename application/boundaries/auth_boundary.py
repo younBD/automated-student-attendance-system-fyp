@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, flash, current_app, request
+from flask import Blueprint, json, render_template, session, redirect, url_for, flash, current_app, request, jsonify
 import secrets
 import bcrypt
 from application.controls.auth_control import AuthControl, authenticate_user, requires_roles
@@ -6,8 +6,10 @@ from application.controls.attendance_control import AttendanceControl
 from application.entities2.institution import InstitutionModel
 from application.entities2.user import UserModel
 from application.entities2.subscription import SubscriptionModel
+from application.entities2.subscription_plans import SubscriptionPlanModel
 from database.base import get_session
 from application.boundaries.dev_actions import register_action
+import stripe
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -75,18 +77,19 @@ def register():
     preselected_plan_id = request.args.get('selected_plan_id') or request.form.get('selected_plan_id')
     preselected_role = 'institution_admin'
 
+    # Get database session outside the try block so it's available in except
+    db_session = None
     try:
-        with get_session() as session:
+        with get_session() as db_session:
             # Get institutions
-            inst_model = InstitutionModel(session)
+            inst_model = InstitutionModel(db_session)
             institutions_objs = inst_model.get_all()
             institutions = [{'institution_id': inst.institution_id, 'name': inst.name} 
                           for inst in institutions_objs if getattr(inst, 'is_active', True)]
 
             # FIXED: Use SubscriptionPlanModel instead of SubscriptionModel
-            from application.entities2.subscription_plans import SubscriptionPlanModel
-            plan_model = SubscriptionPlanModel(session)
-            plans = plan_model.get_active_plans()  # or plan_model.get_all()
+            plan_model = SubscriptionPlanModel(db_session)
+            plans = plan_model.get_active_plans()
             
             # Adjust field names based on your SubscriptionPlan model
             subscription_plans = [
@@ -99,10 +102,11 @@ def register():
                 for p in plans
             ]
     except Exception as e:
+        # Don't try to use db_session in except block - it might not be initialized
         current_app.logger.warning(f"Could not load institutions or subscription plans: {e}")
         institutions = []
         subscription_plans = []
-
+        # No need to access db_session here
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -110,29 +114,32 @@ def register():
         password = request.form.get('password')
         role = request.form.get('role', 'student')
 
-        # Institution Admins: create a pending registration request
+        # Institution Admins: collect registration data and redirect to payment
         if role == 'institution_admin':
             institution_name = request.form.get('institution_name')
             if not institution_name:
                 flash('Educational Institute name is required for Institution Admin registration.', 'warning')
                 return render_template('auth/register.html', institutions=institutions, subscription_plans=subscription_plans, preselected_plan_id=preselected_plan_id, preselected_role=preselected_role)
-            institution_data = {
+            
+            # Store registration data in session for payment page
+            registration_data = {
+                'name': name,
                 'email': email,
-                'full_name': name,
+                'password': password,
+                'role': role,
                 'institution_name': institution_name,
                 'institution_address': request.form.get('institution_address') or '',
                 'phone_number': request.form.get('phone_number') or '',
                 'message': request.form.get('message') or '',
                 'selected_plan_id': request.form.get('selected_plan_id') or None
             }
-
-            result = AuthControl.register_institution(current_app, institution_data)
-            if result.get('success'):
-                flash(result.get('message') or 'Registration request submitted — awaiting approval', 'success')
-                return redirect(url_for('main.home'))
-            else:
-                flash(result.get('error') or 'Failed to submit registration request', 'danger')
-
+            
+            # This uses Flask's session object (not the database session)
+            session['registration_data'] = registration_data
+            
+            # Redirect to payment page
+            return redirect(url_for('auth.payment'))
+        
         else:
             # For other roles, create a local user account (registration)
             institution_id = request.form.get('institution_id') or None
@@ -151,8 +158,9 @@ def register():
                 # Optionally create a local DB record for student/lecturer using new User model
                 try:
                     pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                    with get_session() as session:
-                        user_model = UserModel(session)
+                    # Get a new database session for user creation
+                    with get_session() as user_db_session:
+                        user_model = UserModel(user_db_session)
                         user_model.create(
                             institution_id=int(institution_id) if institution_id else None,
                             role=role if role in ['student', 'lecturer'] else 'student',
@@ -169,7 +177,6 @@ def register():
                 return render_template('auth/register.html', institutions=institutions, subscription_plans=subscription_plans, preselected_plan_id=preselected_plan_id, preselected_role=preselected_role)
 
     return render_template('auth/register.html', institutions=institutions, subscription_plans=subscription_plans, preselected_plan_id=preselected_plan_id, preselected_role=preselected_role)
-
 
 @auth_bp.route('/logout')
 def logout():
@@ -209,3 +216,143 @@ try:
     )
 except Exception:
     pass
+
+@auth_bp.route('/payment', methods=['GET'])
+def payment():
+    """Show payment page with registration summary"""
+    # Get registration data from session
+    registration_data = session.get('registration_data')
+    if not registration_data:
+        flash('Please complete registration first', 'warning')
+        return redirect(url_for('auth.register'))
+    
+    try:
+        with get_session() as db_session:
+            # Get subscription plan details
+            if registration_data.get('selected_plan_id'):
+                plan_model = SubscriptionPlanModel(db_session)
+                selected_plan = plan_model.get_by_id(registration_data['selected_plan_id'])
+            else:
+                selected_plan = None
+            
+            # Convert registration data to JSON for hidden field
+            registration_data_json = json.dumps(registration_data)
+            
+            return render_template(
+                'auth/payment.html',
+                registration_data=registration_data,
+                registration_data_json=registration_data_json,
+                selected_plan=selected_plan,
+                stripe_public_key=current_app.config.get('STRIPE_PUBLIC_KEY')
+            )
+    except Exception as e:
+        current_app.logger.error(f"Error loading payment page: {e}")
+        flash('Error loading payment information', 'danger')
+        return redirect(url_for('auth.register'))
+
+@auth_bp.route('/process_payment', methods=['POST'])
+def process_payment():
+    """Process payment and complete registration (mock version without real Stripe calls)"""
+    try:
+        # Get registration data from form
+        registration_data_json = request.form.get('registration_data')
+        if not registration_data_json:
+            flash('Invalid registration data', 'danger')
+            return redirect(url_for('auth.register'))
+        
+        registration_data = json.loads(registration_data_json)
+        
+        # Mock payment method validation (skip actual validation in dev mode)
+        payment_method_id = request.form.get('payment_method_id')
+        
+        if not payment_method_id:
+            # In development, allow bypassing real payment validation
+            # For production, you'd want to keep this check
+            if current_app.config.get('ENV') == 'development':
+                # Generate a mock payment method ID
+                import secrets
+                payment_method_id = f'pm_mock_{secrets.token_hex(8)}'
+            else:
+                flash('Payment information is required', 'danger')
+                return redirect(url_for('auth.payment'))
+        
+        # Get subscription plan
+        with get_session() as db_session:
+            plan_model = SubscriptionPlanModel(db_session)
+            selected_plan = plan_model.get_by_id(registration_data.get('selected_plan_id'))
+        
+            if not selected_plan:
+                flash('Invalid subscription plan', 'danger')
+                return redirect(url_for('auth.register'))
+            
+            # Generate mock Stripe IDs (no actual API calls)
+            import secrets
+            import time
+            
+            # Mock Stripe customer ID
+            stripe_customer_id = f'cus_mock_{secrets.token_hex(12)}'
+            
+            # Mock Stripe subscription ID
+            timestamp = int(time.time())
+            random_hex = secrets.token_hex(6)
+            stripe_subscription_id = f'sub_mock_{timestamp}_{random_hex}'
+            
+            # Update registration data with mock Stripe info
+            registration_data['stripe_customer_id'] = stripe_customer_id
+            registration_data['stripe_subscription_id'] = stripe_subscription_id
+            registration_data['mock_payment'] = True  # Flag to indicate mock payment
+            
+            # Store payment details for record (optional)
+            registration_data['payment_details'] = {
+                'amount': selected_plan.price_per_cycle,
+                'currency': 'usd',
+                'billing_cycle': selected_plan.billing_cycle,
+                'plan_name': selected_plan.name,
+                'payment_date': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'transaction_id': f'txn_mock_{secrets.token_hex(8)}'
+            }
+            
+        # Store updated registration data in session for the final registration step
+        session['registration_data'] = registration_data
+            
+        # Show confirmation page before final registration
+        flash('Payment processed successfully (mock mode). Ready to complete registration.', 'success')
+        return redirect(url_for('auth.complete_registration'))
+            
+    except Exception as e:
+        current_app.logger.error(f"Payment processing error: {e}")
+        flash('An error occurred while processing payment', 'danger')
+        return redirect(url_for('auth.payment'))
+
+@auth_bp.route('/complete_registration', methods=['GET', 'POST'])
+def complete_registration():
+    """Final step to complete registration with payment confirmation"""
+    registration_data = session.get('registration_data')
+    if not registration_data:
+        flash('Please complete payment first', 'warning')
+        return redirect(url_for('auth.register'))
+
+    # Now call the existing registration logic with Stripe info
+    institution_data = {
+        'email': registration_data['email'],
+        'full_name': registration_data['name'],
+        'institution_name': registration_data['institution_name'],
+        'institution_address': registration_data.get('institution_address', ''),
+        'phone_number': registration_data.get('phone_number', ''),
+        'message': registration_data.get('message', ''),
+        'selected_plan_id': registration_data.get('selected_plan_id'),
+        'stripe_subscription_id': registration_data.get('stripe_subscription_id'),
+        'stripe_customer_id': registration_data.get('stripe_customer_id')
+    }
+    
+    result = AuthControl.register_institution(current_app, institution_data)
+    
+    if result.get('success'):
+        # Clear registration data from session
+        session.pop('registration_data', None)
+        
+        flash(result.get('message') or 'Registration completed successfully! Your account is pending approval.', 'success')
+        return redirect(url_for('main.home'))
+    else:
+        flash(result.get('error') or 'Failed to complete registration', 'danger')
+        return redirect(url_for('auth.register'))

@@ -1,0 +1,213 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Payment - Attendance System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Complete Your Registration</h4>
+            </div>
+            <div class="card-body">
+                <!-- Registration Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Registration Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Personal Details</h6>
+                                <p><strong>Name:</strong> {{ registration_data.name }}</p>
+                                <p><strong>Email:</strong> {{ registration_data.email }}</p>
+                                <p><strong>Role:</strong> {{ registration_data.role|replace('_', ' ')|title }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Institution Details</h6>
+                                <p><strong>Institution:</strong> {{ registration_data.institution_name }}</p>
+                                {% if registration_data.selected_plan_id %}
+                                <p><strong>Selected Plan:</strong> {{ selected_plan.name }}</p>
+                                <p><strong>Price:</strong> ${{ "%.2f"|format(selected_plan.price_per_cycle) }} {{ selected_plan.billing_cycle }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Payment Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="payment-form" method="POST" action="{{ url_for('auth.process_payment') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="registration_data" value="{{ registration_data_json }}">
+                            
+                            <!-- Stripe Card Element -->
+                            <div class="mb-3">
+                                <label for="card-element" class="form-label">Credit or Debit Card</label>
+                                <div id="card-element" class="form-control p-3" style="height: 45px;">
+                                    <!-- Stripe Card Element will be inserted here -->
+                                </div>
+                                <div id="card-errors" class="text-danger mt-2" role="alert"></div>
+                            </div>
+
+                            <!-- Billing Details -->
+                            <h6 class="mt-4">Billing Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="billing_name" class="form-label">Name on Card</label>
+                                    <input type="text" class="form-control" id="billing_name" name="billing_name" value="{{ registration_data.name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="billing_email" class="form-label">Billing Email</label>
+                                    <input type="email" class="form-control" id="billing_email" name="billing_email" value="{{ registration_data.email }}" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="billing_address" class="form-label">Billing Address</label>
+                                    <input type="text" class="form-control" id="billing_address" name="billing_address" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="billing_city" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="billing_city" name="billing_city" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="billing_zip" class="form-label">ZIP/Postal Code</label>
+                                    <input type="text" class="form-control" id="billing_zip" name="billing_zip" required>
+                                </div>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the Terms of Service and Privacy Policy
+                                </label>
+                            </div>
+
+                            <!-- Payment Buttons -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" id="submit-button" class="btn btn-primary">
+                                    <span id="button-text">Pay ${{ "%.2f"|format(selected_plan.price_per_cycle) if selected_plan else '0.00' }} & Complete Registration</span>
+                                    <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                </button>
+                                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary">Back to Registration</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="alert alert-info mt-4">
+                    <small>
+                        <i class="fas fa-lock me-2"></i>
+                        <strong>Secure Payment:</strong> Your payment information is encrypted and processed securely by Stripe. We do not store your credit card details.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Initialize Stripe with your publishable key
+    const stripe = Stripe('{{ stripe_public_key }}');
+    const elements = stripe.elements();
+    
+    // Create card element
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        }
+    });
+    
+    // Mount card element
+    cardElement.mount('#card-element');
+    
+    // Handle real-time validation errors
+    cardElement.addEventListener('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    const submitButton = document.getElementById('submit-button');
+    const buttonText = document.getElementById('button-text');
+    const spinner = document.getElementById('spinner');
+    
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Disable submit button and show spinner
+        submitButton.disabled = true;
+        buttonText.classList.add('d-none');
+        spinner.classList.remove('d-none');
+        
+        try {
+            // Create payment method
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: {
+                    name: document.getElementById('billing_name').value,
+                    email: document.getElementById('billing_email').value,
+                    address: {
+                        line1: document.getElementById('billing_address').value,
+                        city: document.getElementById('billing_city').value,
+                        postal_code: document.getElementById('billing_zip').value
+                    }
+                }
+            });
+            
+            if (error) {
+                // Show error
+                document.getElementById('card-errors').textContent = error.message;
+                // Re-enable button
+                submitButton.disabled = false;
+                buttonText.classList.remove('d-none');
+                spinner.classList.add('d-none');
+                return;
+            }
+            
+            // Add payment method ID to form
+            const paymentMethodInput = document.createElement('input');
+            paymentMethodInput.type = 'hidden';
+            paymentMethodInput.name = 'payment_method_id';
+            paymentMethodInput.value = paymentMethod.id;
+            form.appendChild(paymentMethodInput);
+            
+            // Submit form
+            form.submit();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('card-errors').textContent = 'An unexpected error occurred. Please try again.';
+            submitButton.disabled = false;
+            buttonText.classList.remove('d-none');
+            spinner.classList.add('d-none');
+        }
+    });
+</script>
+{% endblock %}

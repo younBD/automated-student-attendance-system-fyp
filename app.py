@@ -6,6 +6,7 @@ import ssl
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine, text
 from datetime import timedelta
+import stripe
 from application import create_app
 
 from database.models import Base
@@ -78,6 +79,9 @@ def create_flask_app(config_name='default'):
     # Initialize CSRF protection for forms
     csrf = CSRFProtect()
     csrf.init_app(app)
+
+    #Initialize Stripe keys
+    stripe.api_key = app.config.get('STRIPE_SECRET_KEY')
     
     # Store extensions in app config
     app.config['db'] = db  # SQLAlchemy instance

@@ -146,7 +146,7 @@ class AuthControl:
                     start_date=start_date,
                     end_date=end_date,
                     is_active=False,
-                    stripe_subscription_id=None  # Will be set when payment is processed
+                    stripe_subscription_id=institution_data.get('stripe_subscription_id')  # Will be set when payment is processed
                 )
 
                 # Create institution
