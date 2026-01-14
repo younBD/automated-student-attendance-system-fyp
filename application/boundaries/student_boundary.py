@@ -1,6 +1,11 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, current_app, request
 from application.controls.auth_control import AuthControl, requires_roles
 from application.controls.attendance_control import AttendanceControl
+from application.entities2 import ClassModel, SemesterModel
+from pprint import pprint
+from datetime import date
+
+from database.base import get_session
 
 student_bp = Blueprint('student', __name__)
 
@@ -20,8 +25,29 @@ def profile():
 @requires_roles('student')
 def attendance():
     """Student attendance overview"""
-    return render_template('institution/student/student_attendance_management.html',
-                            user=session.get('user'))
+    good_attendance_cutoff = 0.9
+    with get_session() as db_session:
+        class_model = ClassModel(db_session)
+        sem_model = SemesterModel(db_session)
+        term_info = sem_model.get_current_semester_info()
+        term_info["student_id"] = session.get('user_id')
+        term_info["cutoff"] = good_attendance_cutoff * 100
+
+        monthly_report = [{
+            "month": date(report['year'], report['month'], 1).strftime("%B %Y"),
+            "absent_percent": report["absent_percent"],
+            "present_percent": report["present_percent"],
+            "total_classes": report["total_classes"],
+            "is_good": report["present_percent"] >= good_attendance_cutoff,
+        } for report in class_model.student_attendance_monthly(session.get('user_id'), 4)]
+        
+        context = {
+            "term_info": term_info,
+            "monthly_report": monthly_report,
+            "classes": class_model.student_attendance_absent_late(session.get('user_id')),
+        }
+
+    return render_template('institution/student/student_attendance_management.html', **context)
 
 
 @student_bp.route('/attendance/history')
