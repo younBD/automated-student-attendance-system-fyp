@@ -112,11 +112,11 @@ def seed_semesters(years: int, sem_per_year: int=4):
         num_inst = session.query(Institution).count()
     semesters = []
     for inst_id in range(1, num_inst+1):
-        for year in range(date.today().year, date.today().year + years + 1):
+        for year in range(date.today().year, date.today().year + years):
             for q in range(1, sem_per_year + 1):
                 semesters.append(Semester(
                     institution_id=inst_id,
-                    name=f"{year}-Q{q}",
+                    name=f"{year}-{q}",
                     start_date=date(year, (q - 1) * 3 + 1, 1),
                     end_date=date(year, q * 3, 28),
                 ))
@@ -186,6 +186,7 @@ def seed_classes():
         courses = session.query(Course).all()
         users = session.query(User).filter(User.role == "lecturer").all()
         venues = session.query(Venue).all()
+        semesters = session.query(Semester).all()
 
         # Group lecturers by institution
         inst_lecturers = {}
@@ -197,37 +198,48 @@ def seed_classes():
         for v in venues:
             inst_venues.setdefault(v.institution_id, []).append(v)
 
-        def random_datetime_in_month():
-            random_day = random.randint(1, 28)
-            random_hour = random.randint(8, 18) 
-            random_minute = random.choice([0, 15, 30, 45])
-            return datetime.now().replace(day=random_day, hour=random_hour, minute=random_minute, second=0, microsecond=0)
+        # Group semesters by institution
+        inst_semesters = {}
+        for s in semesters:
+            inst_semesters.setdefault(s.institution_id, []).append(s)
 
+        def random_datetime_in_semester(semester: Semester):
+            delta = semester.end_date - semester.start_date
+            random_days = random.randint(0, delta.days)
+            random_hour = random.randint(8, 18)
+            random_minute = random.choice([0, 15, 30, 45])
+            start_date: datetime = semester.as_dict()["start_date"]
+            return start_date.replace(hour=random_hour, minute=random_minute, second=0, microsecond=0) + timedelta(days=random_days)
+
+        classes = []
         for course in courses:
             inst_id = course.institution_id
 
             # Skip if institution has no lecturer or venue
             lecturers: list[User] = inst_lecturers.get(inst_id, [])
             venue_list: list[Venue] = inst_venues.get(inst_id, [])
+            semesters: list[Semester] = inst_semesters.get(inst_id, [])
             if not lecturers or not venue_list:
                 continue
             lecturer = random.choice(lecturers)
-            classes = []
 
-            for _ in range(5):
-                start = random_datetime_in_month()
-                end = start + timedelta(hours=2)
+            for sem in semesters:
+                # 5 classes per course per sem
+                for _ in range(5):
+                    start = random_datetime_in_semester(sem)
+                    end = start + timedelta(hours=2)
 
-                cls = Class(
-                    course_id=course.course_id,
-                    venue_id=random.choice(venue_list).venue_id,
-                    lecturer_id=lecturer.user_id,
-                    start_time=start,
-                    end_time=end,
-                    status="scheduled",
-                )
-                classes.append(cls)
-            session.add_all(classes)
+                    cls = Class(
+                        course_id=course.course_id,
+                        semester_id=sem.semester_id,
+                        venue_id=random.choice(venue_list).venue_id,
+                        lecturer_id=lecturer.user_id,
+                        start_time=start,
+                        end_time=end,
+                        status="scheduled",
+                    )
+                    classes.append(cls)
+        session.add_all(classes)
         session.commit()
     print(f"{len(classes)} classes created.")
 
@@ -237,17 +249,17 @@ def seed_attendance():
         statuses = AttendanceStatusEnum.enums
 
         for cls in classes:
-            # Get all students enrolled in this course (ignoring semester for now)
-            course_students = session.query(CourseUser).join(User).filter(
+            # Get students who should be in this class
+            enrolled_students = session.query(CourseUser).join(User).filter(
                 CourseUser.course_id == cls.course_id,
+                CourseUser.semester_id == cls.semester_id,
                 User.role == "student",
-                User.is_active == True
             ).all()
 
             # Initialize attendance records list
             attendance_records = []
 
-            for cu in course_students:
+            for cu in enrolled_students:
                 if random.random() < 0.8:  # 80% chance
                     record = AttendanceRecord(
                         class_id=cls.class_id,
@@ -294,7 +306,7 @@ def seed_database():
         seed_institutions()
 
     if row_count("Semesters") == 0:
-        seed_semesters(years=3, sem_per_year=4)
+        seed_semesters(years=1, sem_per_year=2)
 
     if row_count("Users") == 0:
         cols = [

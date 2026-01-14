@@ -26,6 +26,7 @@ AttendanceStatusEnum = Enum("unmarked", "present", "absent", "late", "excused", 
 MarkedByEnum = Enum("system", "lecturer", name="marked_by_enum")
 ReportScheduleEnum = Enum("one", "daily", "weekly", "monthly", name="report_schedule_enum")
 TestimonialStatusEnum = Enum("pending", "approved", "rejected", name="testimonial_status_enum")
+AttendanceAppealStatusEnum = Enum("pending", "approved", "rejected", name="attendance_appeal_status_enum")
 
 # =====================
 # SUBSCRIPTION
@@ -198,6 +199,7 @@ class Class(Base, BaseMixin):
 
     class_id = Column(Integer, primary_key=True)
     course_id = Column(Integer, ForeignKey("courses.course_id"), nullable=False, index=True)
+    semester_id = Column(Integer, ForeignKey("semesters.semester_id"), nullable=False, index=True)
     venue_id = Column(Integer, ForeignKey("venues.venue_id"), nullable=False, index=True)
     lecturer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
 
@@ -226,6 +228,21 @@ class AttendanceRecord(Base, BaseMixin):
     recorded_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
 
 # =====================
+# ATTENDANCE APPEAL
+# =====================
+class AttendanceAppeal(Base, BaseMixin):
+    __tablename__ = "attendance_appeals"
+
+    appeal_id = Column(Integer, primary_key=True)
+    attendance_id = Column(Integer, ForeignKey("attendance_records.attendance_id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+
+    status = Column(AttendanceAppealStatusEnum, nullable=False)
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
+
+
+# =====================
 # REPORT SCHEDULE
 # =====================
 class ReportSchedule(Base, BaseMixin):
@@ -235,7 +252,6 @@ class ReportSchedule(Base, BaseMixin):
     institution_id = Column(Integer, ForeignKey("institutions.institution_id"), nullable=False)
     requested_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
 
-    schedule_type = Column(ReportScheduleEnum, nullable=False)
     schedule_type = Column(ReportScheduleEnum, nullable=False)
 
 # ====================
