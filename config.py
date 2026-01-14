@@ -6,8 +6,7 @@ load_dotenv()
 
 class Config:
     # Flask Configuration
-    # Secrets MUST be provided through environment variables (e.g. via .env); do NOT commit secrets to git.
-    SECRET_KEY = os.getenv('SECRET_KEY')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'    
     
     # MySQL Configuration for SQLAlchemy
