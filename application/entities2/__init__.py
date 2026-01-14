@@ -6,6 +6,7 @@ from .course_user import CourseUserModel
 from .course import CourseModel
 from .institution import InstitutionModel
 from .notification import NotificationModel
+from .semester import SemesterModel
 from .subscription import SubscriptionModel
 from .subscription_plans import SubscriptionPlanModel
 from .user import UserModel
