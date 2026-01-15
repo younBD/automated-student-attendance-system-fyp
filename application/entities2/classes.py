@@ -75,7 +75,9 @@ class ClassModel(BaseEntity[Class]):
             .query(func.count(User.user_id))
             .select_from(Class)
             .join(Course, Class.course_id == Course.course_id)
-            .join(CourseUser, CourseUser.course_id == Course.course_id)
+            .join(CourseUser, 
+                  (CourseUser.course_id == Course.course_id) & 
+                  (CourseUser.semester_id == Class.semester_id))
             .join(User, User.user_id == CourseUser.user_id)
             .filter(Class.class_id == class_id)
             .filter(User.role == "student")
@@ -101,9 +103,13 @@ class ClassModel(BaseEntity[Class]):
             .query(User.name, User.user_id, func.coalesce(AttendanceRecord.status, "unmarked"))
             .select_from(Class)
             .join(Course, Class.course_id == Course.course_id)
-            .join(CourseUser, CourseUser.course_id == Course.course_id)
+            .join(CourseUser, 
+                  (CourseUser.course_id == Course.course_id) & 
+                  (CourseUser.semester_id == Class.semester_id))
             .join(User, User.user_id == CourseUser.user_id)
-            .outerjoin(AttendanceRecord, AttendanceRecord.class_id == Class.class_id)
+            .outerjoin(AttendanceRecord, 
+                       (AttendanceRecord.class_id == Class.class_id) & 
+                       (AttendanceRecord.student_id == User.user_id))
             .filter(Class.class_id == class_id)
             .filter(User.role == "student")
             .all()
@@ -246,6 +252,7 @@ class ClassModel(BaseEntity[Class]):
             .select_from(CourseUser)
             .join(User, User.user_id == CourseUser.user_id)
             .filter(CourseUser.course_id == Class.course_id)
+            .filter(CourseUser.semester_id == Class.semester_id)
             .filter(User.role == "student")
             .correlate(Class)
             .scalar_subquery()
