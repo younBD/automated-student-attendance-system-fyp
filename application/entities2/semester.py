@@ -25,7 +25,7 @@ class SemesterModel(BaseEntity[Semester]):
         return dict(zip(headers, data))
     
     def student_dashboard_term_attendance(self, student_id):
-        data = dict(
+        return dict(
             self.session
             .query(
                 func.coalesce(AttendanceRecord.status, "unmarked").label("status"),
@@ -42,6 +42,4 @@ class SemesterModel(BaseEntity[Semester]):
             .group_by(func.coalesce(AttendanceRecord.status, "unmarked"))
             .all()
         )
-        print(data)
-        return data
 

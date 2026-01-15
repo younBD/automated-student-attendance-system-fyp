@@ -34,7 +34,6 @@ def attendance():
         term_info["student_id"] = uid
         term_info["cutoff"] = good_attendance_cutoff * 100
 
-        term_stats = sem_model.student_dashboard_term_attendance(uid)
         monthly_report = [{
             "month": date(report['year'], report['month'], 1).strftime("%B %Y"),
             "absent_percent": report["absent_percent"],
@@ -43,6 +42,7 @@ def attendance():
             "is_good": report["present_percent"] >= good_attendance_cutoff,
         } for report in class_model.student_attendance_monthly(uid, 4)]
         
+        term_stats = sem_model.student_dashboard_term_attendance(uid)
         p, a, l, e = term_stats.get("present", 0), term_stats.get("absent", 0), term_stats.get("late", 0), term_stats.get("excused", 0)
         marked = p + a + l + e
 
