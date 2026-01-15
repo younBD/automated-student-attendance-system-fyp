@@ -164,6 +164,10 @@ class Course(Base, BaseMixin):
 
     institution = relationship("Institution", back_populates="courses")
 
+    def as_sanitized_dict(self):
+        data = self.as_dict()
+        return data
+
 # =====================
 # COURSE USERS (M2M)
 # =====================
@@ -207,6 +211,9 @@ class Class(Base, BaseMixin):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     
+    def as_sanitized_dict(self):
+        data = self.as_dict()
+        return data
 
 # =====================
 # ATTENDANCE RECORDS
