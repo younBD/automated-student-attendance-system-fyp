@@ -129,29 +129,25 @@ class ClassModel(BaseEntity[Class]):
         n_months_ago = datetime.now() - timedelta(days=30 * num_months)
         cutoff_date = n_months_ago.replace(day=1)
         print(cutoff_date)
-        q = (
+        headers = ["year", "month", "total_classes", "p", "a", "l", "e"]
+        return self.add_headers(headers, (
             self.session.query(
                 extract('year', Class.start_time).label('year'),
                 extract('month', Class.start_time).label('month'),
                 func.count(Class.class_id).label('total_classes'),
-                func.sum(case((AttendanceRecord.status == "present", 1), else_=0)).label('present_count'),
-                func.sum(case((AttendanceRecord.status == "absent", 1), else_=0)).label('absent_count'),
+                func.sum(case((AttendanceRecord.status == "present", 1), else_=0)).label('p'),
+                func.sum(case((AttendanceRecord.status == "absent", 1), else_=0)).label('a'),
+                func.sum(case((AttendanceRecord.status == "late", 1), else_=0)).label('l'),
+                func.sum(case((AttendanceRecord.status == "excused", 1), else_=0)).label('e'),
             )
             .join(Class, AttendanceRecord.class_id == Class.class_id)
             .filter(AttendanceRecord.student_id == user_id)
             .filter(Class.start_time >= cutoff_date)
-            .filter(Class.start_time < datetime.now())
+            # .filter(Class.start_time < datetime.now())
+            .filter(Class.start_time < date(2026, 6,27))
             .group_by('year', 'month')
             .order_by('year', 'month')
-        )
-        rows = q.all()
-        return [{
-            "year": row.year,
-            "month": row.month,
-            "total_classes": row.total_classes,
-            "present_percent": float(row.present_count / row.total_classes * 100 if row.total_classes > 0 else 0),
-            "absent_percent": float(row.absent_count / row.total_classes * 100 if row.total_classes > 0 else 0),
-        } for row in rows]
+        ))
 
     def get_attendance_records(self, class_id):
         headers = ["student_name", "student_id", "status"]

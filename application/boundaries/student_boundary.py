@@ -33,14 +33,24 @@ def attendance():
         term_info = sem_model.get_current_semester_info()
         term_info["student_id"] = uid
         term_info["cutoff"] = good_attendance_cutoff * 100
-
-        monthly_report = [{
-            "month": date(report['year'], report['month'], 1).strftime("%B %Y"),
-            "absent_percent": report["absent_percent"],
-            "present_percent": report["present_percent"],
-            "total_classes": report["total_classes"],
-            "is_good": report["present_percent"] >= good_attendance_cutoff,
-        } for report in class_model.student_attendance_monthly(uid, 4)]
+        
+        def analyse_report(report):
+            y, m = report["year"], report["month"]
+            p, a, l, e = report["p"], report["a"], report["l"], report["e"]
+            total = report["total_classes"]
+            present_percent = p + a + l / total * 100
+            return {
+                "month": date(y, m, 1).strftime("%B %Y"),
+                "present": p,
+                "absent": a,
+                "late": l,
+                "excused": e,
+                "present_percent": present_percent,
+                "absent_percent": a / total * 100,
+                "total_classes": total,
+                "is_good": present_percent >= good_attendance_cutoff
+            }
+        monthly_report = [analyse_report(report) for report in class_model.student_attendance_monthly(uid, 4)]
         
         term_stats = sem_model.student_dashboard_term_attendance(uid)
         p, a, l, e = term_stats.get("present", 0), term_stats.get("absent", 0), term_stats.get("late", 0), term_stats.get("excused", 0)
@@ -52,7 +62,7 @@ def attendance():
             "overview": {
                 "present_percent": (p + l + e) / marked * 100 if marked > 0 else 100.0,
                 "absent_percent": a / marked * 100 if marked > 0 else 100.0,
-                "present": p,
+                "present": p + l + e,
                 "absent": a,
                 "total": sum(term_stats.values()),
             },
