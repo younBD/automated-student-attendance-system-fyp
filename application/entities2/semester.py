@@ -1,7 +1,7 @@
 from .base_entity import BaseEntity
 from database.models import *
 from datetime import date
-from sqlalchemy import func, Institution
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, date
 
