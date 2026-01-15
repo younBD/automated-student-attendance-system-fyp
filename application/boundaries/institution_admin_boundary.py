@@ -422,6 +422,15 @@ def update_student_class_attendance(course_id, class_id, student_id):
             flash(f'Attendance updated to {new_status.capitalize()}', 'success')
             return redirect(url_for('institution.attendance_class_details', class_id=class_id))
         else:
-            # No record exists - redirect to attendance details
-            flash('No attendance record found for this student', 'error')
+            # No record exists - create a new one
+            attendance_model.create(
+                class_id=class_id,
+                student_id=student_id,
+                status=new_status,
+                marked_by='lecturer',
+                lecturer_id=session.get('user_id'),
+                notes=notes
+            )
+            flash(f'Attendance marked as {new_status.capitalize()}', 'success')
             return redirect(url_for('institution.attendance_class_details', class_id=class_id))
+            
