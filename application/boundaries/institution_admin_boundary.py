@@ -168,11 +168,7 @@ def remove_user_from_course(user_id):
         return redirect(redirect_path)
     return redirect(url_for('institution.manage_users'))
 
-@institution_bp.route('/manage_attendance')
-@requires_roles('admin')
-def manage_attendance():
 
-    return render_template('institution/admin/institution_admin_attendance_management.html')
 
 
 @institution_bp.route('/manage_classes')
@@ -244,6 +240,17 @@ def attendance_class_details(class_id):
     return render_template('institution/admin/institution_admin_attendance_management_class_details.html', **context)
 
 
+@institution_bp.route('/manage_attendance')
+@requires_roles('admin')
+def manage_attendance():
+    institution_id = session.get('institution_id')
+    with get_session() as db_session:
+        class_model = ClassModel(db_session)
+        classes = class_model.get_all_classes_with_attendance(institution_id)
+
+    return render_template('institution/admin/institution_admin_attendance_management.html', classes=classes)
+
+
 @institution_bp.route('/attendance/reports')
 @requires_roles('admin')
 def attendance_reports():
@@ -293,5 +300,10 @@ def update_user_details(user_id):
             age=request.form.get('age')
         )
     return redirect(url_for('institution.view_user_details', user_id=user_id))
-    
+
+@institution_bp.route('/manage_appeals')
+@requires_roles('admin')
+def manage_appeals():
+    """Render the lecturer appeal-management page"""
+    return render_template('institution/admin/institution_admin_appeal_management.html')    
     
