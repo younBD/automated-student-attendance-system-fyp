@@ -3,452 +3,6 @@
 {% block title %}Class Management - AttendAI{% endblock %}
 
 {% block content %}
-<div class="class-management">
-    <!-- Welcome Header (following the same pattern as other pages) -->
-    <div class="welcome-header mb-4">
-        <div class="header-content">
-            <h1 class="welcome-title">Class Management</h1>
-            <div class="datetime-display">
-                <span class="time">07:48AM</span>
-                <span class="separator">|</span>
-                <span class="date">25 November 2025</span>
-            </div>
-        </div>
-        <div class="notification-bell">
-            <span class="notification-icon">🔔</span>
-            <span class="notification-badge">3</span>
-        </div>
-    </div>
-
-    <!-- Class Selection Dropdown -->
-    <div class="class-selector mb-4">
-        <div class="card-custom">
-            <div class="card-body-custom">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="section-title mb-2">Select Class</h3>
-                        <p class="text-muted">Choose a class to manage its roster and details</p>
-                    </div>
-                    <div class="class-dropdown">
-                        <select id="classSelector" class="form-select" onchange="loadClassDetails(this.value)">
-                            <option value="">Select a class...</option>
-                            {% for class in classes %}
-                            <option value="{{ class.id }}" {% if class.id == current_class.id %}selected{% endif %}>
-                                {{ class.course_code }} - {{ class.section }} ({{ class.name }})
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Class Details Card -->
-    {% if current_class %}
-    <div class="class-details-card mb-4">
-        <div class="card-custom">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">{{ current_class.course_code }} - {{ current_class.name }}</h2>
-                <div class="dropdown">
-                    <button class="btn-outline-custom dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        Actions
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" onclick="editClass()">Edit Class Details</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="duplicateClass()">Duplicate Class</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="exportRoster()">Export Roster</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="archiveClass()">Archive Class</a></li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="card-body-custom">
-                <!-- Class Details Grid -->
-                <div class="class-details-grid mb-4">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="detail-item">
-                                <label class="detail-label">Class Group:</label>
-                                <span class="detail-value">{{ current_class.section }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="detail-item">
-                                <label class="detail-label">Venue:</label>
-                                <span class="detail-value">{{ current_class.room }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="detail-item">
-                                <label class="detail-label">Start Date/Time:</label>
-                                <span class="detail-value">{{ current_class.start_datetime }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="detail-item">
-                                <label class="detail-label">End Date/Time:</label>
-                                <span class="detail-value">{{ current_class.end_datetime }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="detail-item">
-                                <label class="detail-label">Lecturer:</label>
-                                <span class="detail-value">{{ current_class.lecturer }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="detail-item">
-                                <label class="detail-label">Capacity:</label>
-                                <span class="detail-value">{{ current_class.capacity }} students</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Class Roster Section -->
-                <div class="class-roster-section">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3 class="section-title mb-0">Class Roster</h3>
-                        <div class="roster-stats">
-                            <span class="badge bg-primary">{{ students|length }} Students</span>
-                            <span class="badge bg-success">{{ current_class.capacity - students|length }} Slots Available</span>
-                        </div>
-                    </div>
-
-                    <!-- Search and Filter -->
-                    <div class="search-filter-section mb-4">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="search-box">
-                                    <input type="text" 
-                                           id="searchStudents" 
-                                           placeholder="Search by name or ID..."
-                                           onkeyup="searchRoster()">
-                                    <span class="search-icon">🔍</span>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <select id="sortRoster" class="form-select" onchange="sortRoster()">
-                                    <option value="name_asc">Sort by Name (A-Z)</option>
-                                    <option value="name_desc">Sort by Name (Z-A)</option>
-                                    <option value="id_asc">Sort by ID (Ascending)</option>
-                                    <option value="id_desc">Sort by ID (Descending)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select id="filterStatus" class="form-select" onchange="filterRoster()">
-                                    <option value="all">All Students</option>
-                                    <option value="active">Active Only</option>
-                                    <option value="inactive">Inactive Only</option>
-                                    <option value="withdrawn">Withdrawn Only</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn-custom w-100" onclick="refreshRoster()">
-                                    <span class="btn-icon">🔄</span>
-                                    Refresh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Add Student Section -->
-                    <div class="add-student-section mb-4">
-                        <div class="card-custom">
-                            <div class="card-body-custom">
-                                <h4 class="mb-3">Add Student to Roster</h4>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <input type="text" 
-                                               id="studentIdInput" 
-                                               class="form-control" 
-                                               placeholder="Enter Student ID or Email">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button class="btn-custom w-100" onclick="addStudent()">
-                                            <span class="btn-icon">➕</span>
-                                            Add Student
-                                        </button>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button class="btn-outline-custom w-100" onclick="showBulkUpload()">
-                                            <span class="btn-icon">📄</span>
-                                            Bulk Upload
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Roster Table -->
-                    <div class="roster-table-section">
-                        <div class="table-responsive">
-                            <table class="roster-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Student ID</th>
-                                        <th>Email</th>
-                                        <th>Status</th>
-                                        <th>Enrollment Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="rosterTableBody">
-                                    {% for student in students %}
-                                    <tr data-student-id="{{ student.id }}">
-                                        <td>
-                                            <div class="student-name">
-                                                <div class="student-avatar">
-                                                    {{ student.initials }}
-                                                </div>
-                                                <div>
-                                                    <strong>{{ student.name }}</strong>
-                                                    <div class="student-program">{{ student.program }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <code class="student-id">{{ student.id_number }}</code>
-                                        </td>
-                                        <td>
-                                            <a href="mailto:{{ student.email }}" class="student-email">
-                                                {{ student.email }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge status-{{ student.status }}">
-                                                {{ student.status|capitalize }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {{ student.enrollment_date }}
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <!-- Updated to use popup modal -->
-                                                <button class="btn-action" 
-                                                        onclick="openStudentModal('{{ student.id }}', '{{ student.name }}', '{{ student.id_number }}', '{{ student.email }}', '{{ student.program }}', '{{ student.status }}', '{{ student.year }}')" 
-                                                        title="View Details">
-                                                    👁️
-                                                </button>
-                                                <button class="btn-action" onclick="editStudent('{{ student.id }}')" title="Edit">
-                                                    ✏️
-                                                </button>
-                                                <button class="btn-action btn-danger" onclick="removeStudent('{{ student.id }}')" title="Remove">
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {% if not students %}
-                        <div class="empty-roster card-custom">
-                            <div class="card-body-custom text-center">
-                                <div class="empty-state-icon mb-3">👥</div>
-                                <h4>No Students in Roster</h4>
-                                <p class="text-muted mb-4">Add students to this class using the form above.</p>
-                                <button class="btn-custom" onclick="showBulkUpload()">
-                                    <span class="btn-icon">📄</span>
-                                    Upload Student List
-                                </button>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Bulk Upload Modal (Hidden by default) -->
-                    <div id="bulkUploadModal" class="modal-overlay" style="display: none;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h3>Bulk Upload Students</h3>
-                                <button class="btn-close" onclick="hideBulkUpload()">×</button>
-                            </div>
-                            <div class="modal-body">
-                                <p class="text-muted mb-3">Upload a CSV file with student information. Required columns: Student ID, Name, Email</p>
-                                
-                                <div class="file-upload-area mb-3">
-                                    <input type="file" id="csvFile" accept=".csv" class="d-none">
-                                    <label for="csvFile" class="file-upload-label">
-                                        <div class="file-upload-content">
-                                            <span class="file-upload-icon">📁</span>
-                                            <span class="file-upload-text">Choose CSV file or drag here</span>
-                                            <span class="file-upload-hint">Max file size: 5MB</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                
-                                <div class="upload-preview" id="uploadPreview" style="display: none;">
-                                    <h5>Upload Preview</h5>
-                                    <div class="table-responsive">
-                                        <table class="preview-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Student ID</th>
-                                                    <th>Name</th>
-                                                    <th>Email</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="previewTableBody">
-                                                <!-- Preview rows will be inserted here -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn-outline-custom" onclick="hideBulkUpload()">Cancel</button>
-                                <button class="btn-custom" onclick="processBulkUpload()">Upload Students</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="card-footer-custom">
-                <div class="d-flex justify-content-end gap-3">
-                    <button class="btn-outline-custom" onclick="cancelChanges()">Cancel</button>
-                    <button class="btn-custom" onclick="saveChanges()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <!-- No Class Selected -->
-    <div class="no-class-selected">
-        <div class="card-custom">
-            <div class="card-body-custom text-center">
-                <div class="empty-state-icon mb-3">🏫</div>
-                <h4>No Class Selected</h4>
-                <p class="text-muted mb-4">Please select a class from the dropdown above to manage its roster.</p>
-                <button class="btn-custom" onclick="createNewClass()">
-                    <span class="btn-icon">➕</span>
-                    Create New Class
-                </button>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Student Details Modal (Adapted from lecturer_class_management_with_student_detail_popup.html) -->
-<div id="studentModal" class="student-modal-overlay" onclick="closeStudentModal(event)">
-    <div class="student-modal-content" onclick="event.stopPropagation()">
-        <!-- Modal Header -->
-        <div class="student-modal-header">
-            <h2>Student Details</h2>
-            <button onclick="closeStudentModal()" class="student-modal-close">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Modal Content -->
-        <div class="student-modal-body">
-            <!-- Student Header -->
-            <div class="student-modal-header-info">
-                <div class="student-avatar-large">
-                    <span id="studentInitials">JT</span>
-                </div>
-                <div class="student-info-header">
-                    <h3 id="studentName">James Teo</h3>
-                    <p id="studentDegree">Bachelor in Computer Science<br>(Big Data)</p>
-                </div>
-            </div>
-
-            <!-- Student Information Grid -->
-            <div class="student-info-grid">
-                <!-- Email -->
-                <div class="student-info-item">
-                    <div class="student-info-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="student-info-content">
-                        <p class="student-info-label">Email</p>
-                        <p id="studentEmail" class="student-info-value">XXXX123@uowmail.edu.au</p>
-                    </div>
-                </div>
-
-                <!-- Year -->
-                <div class="student-info-item">
-                    <div class="student-info-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="student-info-content">
-                        <p class="student-info-label">Year</p>
-                        <p id="studentYear" class="student-info-value">Year 3</p>
-                    </div>
-                </div>
-
-                <!-- University ID -->
-                <div class="student-info-item">
-                    <div class="student-info-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="student-info-content">
-                        <p class="student-info-label">University ID</p>
-                        <p id="studentId" class="student-info-value">8531254</p>
-                    </div>
-                </div>
-
-                <!-- Status -->
-                <div class="student-info-item">
-                    <div class="student-info-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <div class="student-info-content">
-                        <p class="student-info-label">Status</p>
-                        <p id="studentStatus" class="student-info-value">Active</p>
-                    </div>
-                </div>
-
-                <!-- Enrollment Date -->
-                <div class="student-info-item">
-                    <div class="student-info-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="student-info-content">
-                        <p class="student-info-label">Enrollment Date</p>
-                        <p id="studentEnrollmentDate" class="student-info-value">15/08/2024</p>
-                    </div>
-                </div>
-
-                <!-- Attendance Rate -->
-                <div class="student-info-item">
-                    <div class="student-info-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                    </div>
-                    <div class="student-info-content">
-                        <p class="student-info-label">Attendance Rate</p>
-                        <p id="studentAttendance" class="student-info-value attendance-good">92%</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     /* Class Management Specific Styles */
@@ -1180,27 +734,445 @@
     }
 </style>
 
-{% block scripts %}
+<div class="class-management">
+    <!-- Welcome Header (following the same pattern as other pages) -->
+    <div class="welcome-header mb-4">
+        <div class="header-content">
+            <h1 class="welcome-title">Class Management</h1>
+            <div class="datetime-display">
+                <span class="time">{{ current_time }}</span>
+                <span class="separator">|</span>
+                <span class="date">{{ current_date }}</span>
+            </div>
+        </div>
+        <div class="notification-bell">
+            <span class="notification-icon">🔔</span>
+            <span class="notification-badge">3</span>
+        </div>
+    </div>
+
+    <!-- Class Selection Dropdown -->
+    <div class="class-selector mb-4">
+        <div class="card-custom">
+            <div class="card-body-custom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="section-title mb-2">Select Class</h3>
+                        <p class="text-muted">Choose a class to manage its roster and details</p>
+                    </div>
+                    <div class="class-dropdown">
+                        <select id="classSelector" class="form-select" onchange="loadClassDetails(this.value)">
+                            <option value="">Select a class...</option>
+                            {% for class in classes %}
+                            <option value="{{ class.id }}" {% if current_class and class.id == current_class.id %}selected{% endif %}>
+                                {{ class.start_datetime }} - {{ class.course_code }} - ({{ class.course_name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Class Details Card -->
+    {% if current_class %}
+    <div class="class-details-card mb-4">
+        <div class="card-custom">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">{{ current_class.course_code }} - {{ current_class.course_name }}</h2>
+                <div class="dropdown">
+                    <button class="btn-outline-custom dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Actions
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="editClass('{{ current_class.id }}')">Edit Class Details</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="duplicateClass('{{ current_class.id }}')">Duplicate Class</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportRoster('{{ current_class.id }}')">Export Roster</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="archiveClass('{{ current_class.id }}')">Archive Class</a></li>
+                    </ul>
+                </div>
+            </div>
+        
+            <div class="card-body-custom">
+                <!-- Class Details Grid (updated) -->
+                <div class="class-details-grid mb-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">Venue:</label>
+                                <span class="detail-value">{{ current_class.room }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">Start Date/Time:</label>
+                                <span class="detail-value">{{ current_class.start_datetime }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">End Date/Time:</label>
+                                <span class="detail-value">{{ current_class.end_datetime }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">Lecturer:</label>
+                                <span class="detail-value">{{ current_class.lecturer }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">Capacity:</label>
+                                <span class="detail-value">{{ current_class.capacity }} students</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">Class Type:</label>
+                                <span class="detail-value">{{ current_class.class_type }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="detail-item">
+                                <label class="detail-label">Status:</label>
+                                <span class="detail-value">{{ current_class.status|capitalize }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Class Roster Section (updated) -->
+                <div class="class-roster-section">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="section-title mb-0">Class Roster</h3>
+                        <div class="roster-stats">
+                            <span class="badge bg-primary">{{ students|length }} Students</span>
+                            <span class="badge bg-success">{{ current_class.capacity - students|length }} Slots Available</span>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="search-filter-section mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="search-box">
+                                    <input type="text" 
+                                           id="searchStudents" 
+                                           placeholder="Search by name or ID..."
+                                           onkeyup="searchRoster()">
+                                    <span class="search-icon">🔍</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select id="sortRoster" class="form-select" onchange="sortRoster()">
+                                    <option value="name_asc">Sort by Name (A-Z)</option>
+                                    <option value="name_desc">Sort by Name (Z-A)</option>
+                                    <option value="id_asc">Sort by ID (Ascending)</option>
+                                    <option value="id_desc">Sort by ID (Descending)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select id="filterStatus" class="form-select" onchange="filterRoster()">
+                                    <option value="all">All Students</option>
+                                    <option value="active">Active Only</option>
+                                    <option value="inactive">Inactive Only</option>
+                                    <option value="withdrawn">Withdrawn Only</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn-custom w-100" onclick="refreshRoster()">
+                                    <span class="btn-icon">🔄</span>
+                                    Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Student Section -->
+                    <div class="add-student-section mb-4">
+                        <div class="card-custom">
+                            <div class="card-body-custom">
+                                <h4 class="mb-3">Add Student to Roster</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <input type="text" 
+                                               id="studentIdInput" 
+                                               class="form-control" 
+                                               placeholder="Enter Student ID or Email">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn-custom w-100" onclick="addStudent()">
+                                            <span class="btn-icon">➕</span>
+                                            Add Student
+                                        </button>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn-outline-custom w-100" onclick="showBulkUpload()">
+                                            <span class="btn-icon">📄</span>
+                                            Bulk Upload
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roster Table -->
+                    <div class="roster-table-section">
+                        <div class="table-responsive">
+                            <table class="roster-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Student ID</th>
+                                        <th>Email</th>
+                                        <th>Program</th>
+                                        <th>Status</th>
+                                        <th>Enrollment Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rosterTableBody">
+                                    {% for student in students %}
+                                    <tr data-student-id="{{ student.id }}">
+                                        <td>
+                                            <div class="student-name">
+                                                <div class="student-avatar">
+                                                    {{ student.initials }}
+                                                </div>
+                                                <div>
+                                                    <strong>{{ student.name }}</strong>
+                                                    <div class="student-program">{{ student.program }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <code class="student-id">{{ student.id_number }}</code>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:{{ student.email }}" class="student-email">
+                                                {{ student.email }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {{ student.program }}
+                                        </td>
+                                        <td>
+                                            <span class="status-badge status-{{ student.status }}">
+                                                {{ student.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {{ student.enrollment_date }}
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn-action" 
+                                                        onclick="openStudentModal('{{ student.id }}', '{{ student.name|tojson }}', '{{ student.id_number|tojson }}', '{{ student.email|tojson }}', '{{ student.program|tojson }}', '{{ student.status|tojson }}', '{{ student.year|tojson }}')" 
+                                                        title="View Details">
+                                                    👁️
+                                                </button>
+                                                <button class="btn-action" onclick="editStudent('{{ student.id }}')" title="Edit">
+                                                    ✏️
+                                                </button>
+                                                <button class="btn-action btn-danger" onclick="removeStudent('{{ student.id }}', '{{ student.name|tojson }}')" title="Remove">
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {% if not students %}
+                        <div class="empty-roster card-custom">
+                            <div class="card-body-custom text-center">
+                                <div class="empty-state-icon mb-3">👥</div>
+                                <h4>No Students in Roster</h4>
+                                <p class="text-muted mb-4">Add students to this class using the form above.</p>
+                                <button class="btn-custom" onclick="showBulkUpload()">
+                                    <span class="btn-icon">📄</span>
+                                    Upload Student List
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons (updated) -->
+            <div class="card-footer-custom">
+                <div class="d-flex justify-content-end gap-3">
+                    <button class="btn-outline-custom" onclick="cancelChanges()">Cancel</button>
+                    <button class="btn-custom" onclick="saveChanges()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Class Selected -->
+    <div class="no-class-selected">
+        <div class="card-custom">
+            <div class="card-body-custom text-center">
+                <div class="empty-state-icon mb-3">🏫</div>
+                <h4>No Class Selected</h4>
+                <p class="text-muted mb-4">Please select a class from the dropdown above to manage its roster.</p>
+                <button class="btn-custom" onclick="createNewClass()">
+                    <span class="btn-icon">➕</span>
+                    Create New Class
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Student Details Modal (Adapted from lecturer_class_management_with_student_detail_popup.html) -->
+<div id="studentModal" class="student-modal-overlay" onclick="closeStudentModal(event)">
+    <div class="student-modal-content" onclick="event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="student-modal-header">
+            <h2>Student Details</h2>
+            <button onclick="closeStudentModal()" class="student-modal-close">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="student-modal-body">
+            <!-- Student Header -->
+            <div class="student-modal-header-info">
+                <div class="student-avatar-large">
+                    <span id="studentInitials">JT</span>
+                </div>
+                <div class="student-info-header">
+                    <h3 id="studentName">James Teo</h3>
+                    <p id="studentDegree">Bachelor in Computer Science<br>(Big Data)</p>
+                </div>
+            </div>
+
+            <!-- Student Information Grid -->
+            <div class="student-info-grid">
+                <!-- Email -->
+                <div class="student-info-item">
+                    <div class="student-info-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="student-info-content">
+                        <p class="student-info-label">Email</p>
+                        <p id="studentEmail" class="student-info-value">XXXX123@uowmail.edu.au</p>
+                    </div>
+                </div>
+
+                <!-- Year -->
+                <div class="student-info-item">
+                    <div class="student-info-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="student-info-content">
+                        <p class="student-info-label">Year</p>
+                        <p id="studentYear" class="student-info-value">Year 3</p>
+                    </div>
+                </div>
+
+                <!-- University ID -->
+                <div class="student-info-item">
+                    <div class="student-info-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="student-info-content">
+                        <p class="student-info-label">University ID</p>
+                        <p id="studentId" class="student-info-value">8531254</p>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="student-info-item">
+                    <div class="student-info-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="student-info-content">
+                        <p class="student-info-label">Status</p>
+                        <p id="studentStatus" class="student-info-value">Active</p>
+                    </div>
+                </div>
+
+                <!-- Enrollment Date -->
+                <div class="student-info-item">
+                    <div class="student-info-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="student-info-content">
+                        <p class="student-info-label">Enrollment Date</p>
+                        <p id="studentEnrollmentDate" class="student-info-value">15/08/2024</p>
+                    </div>
+                </div>
+
+                <!-- Attendance Rate -->
+                <div class="student-info-item">
+                    <div class="student-info-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <div class="student-info-content">
+                        <p class="student-info-label">Attendance Rate</p>
+                        <p id="studentAttendance" class="student-info-value attendance-good">92%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Current class state
     let currentClassId = "{{ current_class.id if current_class else '' }}";
     let rosterChanges = {};
     
     function loadClassDetails(classId) {
-        if (!classId) {
-            window.location.href = "{{ url_for('institution_lecturer.manage_classes') }}";
-            return;
-        }
-        
-        window.location.href = "{{ url_for('institution_lecturer.manage_classes') }}?class_id=" + classId;
+    if (!classId) {
+        window.location.href = "{{ url_for('institution_lecturer.manage_classes') }}";
+        return;
+    }
+    
+    // Add the class_id parameter to the URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('class_id', classId);
+    window.location.href = url.toString();
     }
     
     function createNewClass() {
         window.location.href = "{{ url_for('institution_lecturer.manage_classes') }}";
     }
     
-    function editClass() {
-        window.location.href = "{{ url_for('institution_lecturer.manage_classes', class_id=current_class.id) if current_class else '#' }}";
+    function editClass(classId) {
+    if (!classId) {
+        showToast('No class selected', 'warning');
+        return;
+    }
+    // This would typically open a modal or redirect to an edit page
+    console.log('Editing class:', classId);
+    showToast('Edit class functionality coming soon', 'info');
     }
     
     function duplicateClass() {
@@ -1211,32 +1183,38 @@
         }
     }
     
-    function exportRoster() {
-        // Generate CSV content
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Student ID,Name,Email,Status,Enrollment Date\n";
+    function exportRoster(classId) {
+    if (!classId) {
+        showToast('No class selected', 'warning');
+        return;
+    }
+    
+    // Generate CSV content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Student ID,Name,Email,Program,Status,Enrollment Date\n";
+    
+    document.querySelectorAll('#rosterTableBody tr').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const id = cells[1].querySelector('.student-id').textContent;
+        const name = cells[0].querySelector('strong').textContent;
+        const email = cells[2].querySelector('.student-email').textContent;
+        const program = cells[3].textContent.trim();
+        const status = cells[4].querySelector('.status-badge').textContent;
+        const enrollmentDate = cells[5].textContent.trim();
         
-        document.querySelectorAll('#rosterTableBody tr').forEach(row => {
-            const cells = row.querySelectorAll('td');
-            const id = cells[1].querySelector('.student-id').textContent;
-            const name = cells[0].querySelector('strong').textContent;
-            const email = cells[2].querySelector('.student-email').textContent;
-            const status = cells[3].querySelector('.status-badge').textContent;
-            const enrollmentDate = cells[4].textContent.trim();
-            
-            csvContent += `"${id}","${name}","${email}","${status}","${enrollmentDate}"\n`;
-        });
-        
-        // Create download link
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `roster_${currentClassId}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        showToast('Roster exported successfully', 'success');
+        csvContent += `"${id}","${name}","${email}","${program}","${status}","${enrollmentDate}"\n`;
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `roster_class_${classId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Roster exported successfully', 'success');
     }
     
     function archiveClass() {
@@ -1427,41 +1405,71 @@
         showToast('Edit student functionality coming soon', 'info');
     }
     
-    function removeStudent(studentId) {
-        if (confirm('Remove this student from the class roster?')) {
-            // In a real app, this would make an API call
-            console.log('Removing student:', studentId);
-            
-            // Remove from UI
-            const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
-            if (row) {
-                row.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => {
-                    row.remove();
-                    updateRosterStats();
-                }, 300);
-            }
-            
-            showToast('Student removed from roster', 'success');
+    function removeStudent(studentId, studentName) {
+        if (!confirm(`Remove ${studentName} from the class roster?`)) {
+            return;
         }
+    
+        // Build the URL directly
+        const url = `/api/class/${currentClassId}/remove_student`;
+    
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                student_id: studentId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove from UI
+                const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
+                if (row) {
+                    row.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => {
+                        row.remove();
+                        updateRosterStats();
+                    }, 300);
+                }
+                showToast('Student removed from roster', 'success');
+            } else {
+                showToast('Error removing student: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error removing student', 'error');
+        });
     }
     
     function updateRosterStats() {
-        const studentCount = document.querySelectorAll('#rosterTableBody tr').length;
-        const capacity = {{ current_class.capacity if current_class else 0 }};
-        
-        // Update badges
-        const studentBadge = document.querySelector('.roster-stats .badge:first-child');
-        const capacityBadge = document.querySelector('.roster-stats .badge:last-child');
-        
-        if (studentBadge) {
-            studentBadge.textContent = `${studentCount} Students`;
-        }
-        
-        if (capacityBadge) {
-            capacityBadge.textContent = `${capacity - studentCount} Slots Available`;
-        }
+    const studentCount = document.querySelectorAll('#rosterTableBody tr').length;
+    const capacity = "{{ current_class.capacity if current_class else 0 }}";
+    
+    // Update badges
+    const studentBadge = document.querySelector('.roster-stats .badge:first-child');
+    const capacityBadge = document.querySelector('.roster-stats .badge:last-child');
+    
+    if (studentBadge) {
+        studentBadge.textContent = `${studentCount} Students`;
     }
+    
+    if (capacityBadge) {
+        capacityBadge.textContent = `${capacity - studentCount} Slots Available`;
+    }
+    }
+
+// Update the DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', function() {
+    // Set currentClassId from template context
+    currentClassId = "{{ current_class.id if current_class else '' }}";
+    
+    // Update datetime display with dynamic data (already set by template)
+    // The template variables {{ current_time }} and {{ current_date }} are already set
+});
     
     function saveChanges() {
         // In a real app, this would send all changes to the server
@@ -1645,5 +1653,4 @@
     `;
     document.head.appendChild(style);
 </script>
-{% endblock %}
 {% endblock %}

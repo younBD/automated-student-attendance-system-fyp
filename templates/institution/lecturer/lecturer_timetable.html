@@ -1235,8 +1235,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const typeFilter = document.getElementById('typeFilter').value;
         const timeFilter = document.getElementById('timeFilter').value;
         
-        console.log('Applying filters:', { courseFilter, typeFilter, timeFilter });
-        
         // Get all class items
         const classSelectors = '.class-item, .weekly-class-card, .list-view-item';
         const classItems = document.querySelectorAll(classSelectors);
@@ -1248,8 +1246,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const course = item.dataset.course || '';
             const type = item.dataset.type || '';
             const timeSlot = item.dataset.timeSlot || getTimeSlotFromElement(item);
-            
-            console.log(`Item ${index}:`, { course, type, timeSlot });
             
             // Apply filters
             const showCourse = courseFilter === 'all' || 
@@ -1270,8 +1266,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 item.style.display = 'none';
             }
         });
-        
-        console.log(`Visible after filtering: ${visibleCount} items`);
         
         // Update UI
         updateFilteredUI(visibleCount);

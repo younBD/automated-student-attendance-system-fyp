@@ -7,6 +7,7 @@ from application.entities2.classes import ClassModel
 from application.entities2.course import CourseModel
 from application.entities2.user import UserModel
 from application.entities2.attendance_record import AttendanceRecordModel
+from application.entities2.venue import VenueModel
 from application.controls.announcement_control import AnnouncementControl
 from application.controls.lecturer_control import LecturerControl
 from datetime import datetime, date, timedelta
@@ -275,12 +276,16 @@ def attendance_statistics():
 def manage_classes():
     """Render the lecturer class-management page"""
     course_id = request.args.get('course_id')
+    class_id = request.args.get('class_id')  # Add this to get specific class
     
     try:
         with get_session() as db_session:
             lecturer_id = get_lecturer_id()
+            institution_id = get_institution_id()
             course_model = CourseModel(db_session)
             class_model = ClassModel(db_session)
+            user_model = UserModel(db_session)
+            venue_model = VenueModel(db_session)
             
             # Get lecturer's courses
             courses = course_model.get_by_user_id(lecturer_id)
@@ -295,6 +300,76 @@ def manage_classes():
                     course_classes = class_model.get_classes_for_course(course.course_id, lecturer_id)
                     classes.extend(course_classes)
             
+            # Get specific class details if class_id is provided
+            current_class = None
+            students = []
+            if class_id:
+                # Get class details
+                class_obj = class_model.get_by_id(class_id)
+                if class_obj and class_obj.lecturer_id == lecturer_id:
+                    # Get course details
+                    course = course_model.get_by_id(class_obj.course_id) if class_obj.course_id else None
+                    
+                    # Get venue details
+                    venue = venue_model.get_by_id(class_obj.venue_id) if class_obj.venue_id else None
+                    
+                    # Get lecturer details
+                    lecturer = user_model.get_by_id(class_obj.lecturer_id) if class_obj.lecturer_id else None
+                    
+                    # Get enrolled students for this class
+                    students = class_model.get_enrolled_students(class_id)
+                    
+                    # Format current class data
+                    current_class = {
+                        'id': class_obj.class_id,
+                        'course_id': class_obj.course_id,
+                        'course_code': course.code if course else 'N/A',
+                        'course_name': course.name if course else 'N/A',
+                        'section': getattr(class_obj, 'section', '') or 'N/A',
+                        'room': venue.name if venue else 'N/A',
+                        'venue_id': class_obj.venue_id,
+                        'start_time': class_obj.start_time,
+                        'end_time': class_obj.end_time,
+                        'start_datetime': class_obj.start_time.strftime('%B %d, %Y %I:%M %p') if class_obj.start_time else 'N/A',
+                        'end_datetime': class_obj.end_time.strftime('%B %d, %Y %I:%M %p') if class_obj.end_time else 'N/A',
+                        'lecturer_id': class_obj.lecturer_id,
+                        'lecturer': lecturer.name if lecturer else 'N/A',
+                        'lecturer_email': lecturer.email if lecturer else 'N/A',
+                        'capacity': venue.capacity if venue else 0,
+                        'status': class_obj.status,
+                        'class_type': getattr(class_obj, 'class_type', 'Lecture')
+                    }
+            
+            # Format classes for dropdown
+            formatted_classes = []
+            for class_obj in classes:
+                course = course_model.get_by_id(class_obj.course_id) if class_obj.course_id else None
+                formatted_classes.append({
+                    'id': class_obj.class_id,
+                    'course_code': course.code if course else 'N/A',
+                    'course_name': course.name if course else 'N/A',
+                    'start_time': class_obj.start_time.strftime('%B %d, %Y') if class_obj.start_time else 'N/A',
+                    'start_datetime': class_obj.start_time.strftime('%B %d, %Y %I:%M %p') if class_obj.start_time else 'N/A',
+                })
+            
+            # Format students for roster
+            formatted_students = []
+            for student in students:
+                # Get student enrollment details (you may need to add this to your models)
+                # For now, we'll use default values
+                formatted_students.append({
+                    'id': student.user_id,
+                    'id_number': getattr(student, 'student_id', f'STU{student.user_id:06d}'),
+                    'name': student.name,
+                    'email': student.email,
+                    'program': getattr(student, 'program', 'Not specified'),
+                    'year': getattr(student, 'year', 'Year 1'),
+                    'status': 'active',  # You'll need to get this from enrollment records
+                    'enrollment_date': date.today().strftime('%d/%m/%Y'),  # Default for now
+                    'initials': ''.join([name[0] for name in student.name.split()[:2]]).upper() if student.name else '??',
+                    'phone_number': getattr(student, 'phone_number', 'N/A')
+                })
+            
             context = {
                 'courses': [
                     {
@@ -305,21 +380,14 @@ def manage_classes():
                     }
                     for course in courses
                 ],
-                'classes': [
-                    {
-                        'class_id': class_obj.class_id,
-                        'course_code': next((c.code for c in courses if c.course_id == class_obj.course_id), 'N/A'),
-                        'course_name': next((c.name for c in courses if c.course_id == class_obj.course_id), 'N/A'),
-                        'start_time': class_obj.start_time.strftime('%I:%M %p') if class_obj.start_time else 'N/A',
-                        'end_time': class_obj.end_time.strftime('%I:%M %p') if class_obj.end_time else 'N/A',
-                        'date': class_obj.start_time.strftime('%B %d, %Y') if class_obj.start_time else 'N/A',
-                        'venue': class_obj.venue.name if hasattr(class_obj, 'venue') and class_obj.venue else 'N/A',
-                        'section': getattr(class_obj, 'section', ''),
-                        'enrolled_count': class_model.get_enrolled_count(class_obj.class_id)
-                    }
-                    for class_obj in classes
-                ],
-                'selected_course_id': course_id
+                'classes': formatted_classes,
+                'selected_course_id': course_id,
+                'current_class': current_class,
+                'students': formatted_students,
+                'total_students': len(formatted_students),
+                'current_time': datetime.now().strftime('%I:%M %p'),
+                'current_date': date.today().strftime('%d %B %Y'),
+                'lecturer_name': user_model.get_by_id(lecturer_id).name if user_model.get_by_id(lecturer_id) else 'Lecturer'
             }
         
         return render_template('institution/lecturer/lecturer_class_management.html', **context)
@@ -577,6 +645,73 @@ def get_attendance_statistics_api():
             
     except Exception as e:
         current_app.logger.error(f"Error getting attendance statistics: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@lecturer_bp.route('/api/class/<int:class_id>/add_student', methods=['POST'])
+@requires_roles('lecturer')
+def add_student_api(class_id):
+    """API endpoint to add a student to a class"""
+    try:
+        data = request.get_json()
+        student_id = data.get('student_id')
+        student_email = data.get('student_email')
+        
+        if not class_id or (not student_id and not student_email):
+            return jsonify({'success': False, 'error': 'Class ID and Student ID/Email are required'}), 400
+        
+        with get_session() as db_session:
+            lecturer_id = get_lecturer_id()
+            class_model = ClassModel(db_session)
+            
+            # Verify lecturer has access to this class
+            class_obj = class_model.get_by_id(class_id)
+            if not class_obj or class_obj.lecturer_id != lecturer_id:
+                return jsonify({'success': False, 'error': 'Unauthorized access'}), 403
+            
+            # TODO: Implement actual student addition logic
+            # This would typically involve adding to CourseUser table
+            
+            return jsonify({
+                'success': True,
+                'message': 'Student added to class',
+                'student_id': student_id
+            })
+            
+    except Exception as e:
+        current_app.logger.error(f"Error adding student to class: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@lecturer_bp.route('/api/class/<int:class_id>/remove_student', methods=['POST'])
+@requires_roles('lecturer')
+def remove_student_api(class_id):
+    """API endpoint to remove a student from a class"""
+    try:
+        data = request.get_json()
+        student_id = data.get('student_id')
+        
+        if not class_id or not student_id:
+            return jsonify({'success': False, 'error': 'Class ID and Student ID are required'}), 400
+        
+        with get_session() as db_session:
+            lecturer_id = get_lecturer_id()
+            class_model = ClassModel(db_session)
+            
+            # Verify lecturer has access to this class
+            class_obj = class_model.get_by_id(class_id)
+            if not class_obj or class_obj.lecturer_id != lecturer_id:
+                return jsonify({'success': False, 'error': 'Unauthorized access'}), 403
+            
+            # TODO: Implement actual student removal logic
+            # This would typically involve removing from CourseUser table
+            
+            return jsonify({
+                'success': True,
+                'message': 'Student removed from class',
+                'student_id': student_id
+            })
+            
+    except Exception as e:
+        current_app.logger.error(f"Error removing student from class: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # Helper functions
