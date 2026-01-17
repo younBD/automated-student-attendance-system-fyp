@@ -12,26 +12,51 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Email</th>
-                        <th>Full name</th>
                         <th>Institution</th>
-                        <th>Applied</th>
-                        <th>Action</th>
+                        <th>Contact Person</th>
+                        <th>Email</th>
+                        <th>Plan</th>
+                        <th>Request Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in requests %}
                     <tr>
-                        <td>{{ r[0] }}</td>
-                        <td>{{ r[1] }}</td>
-                        <td>{{ r[2] }}</td>
-                        <td>{{ r[3] }}</td>
-                        <td>{{ r[4] }}</td>
+                        <td>{{ r.subscription_id }}</td>
                         <td>
-                            <form method="post" action="{{ url_for('platform.approve_registration', unreg_user_id=r[0]) }}" style="display:inline">
-                                <input type="hidden" name="temp_password" value="">
-                                <button class="btn btn-sm btn-success" type="submit">Approve</button>
-                            </form>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle bg-primary text-white me-2" style="width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    {{ r.initials }}
+                                </div>
+                                <div>
+                                    <strong>{{ r.institution_name }}</strong><br>
+                                    <small class="text-muted">{{ r.location }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ r.contact_person }}</td>
+                        <td>{{ r.contact_email }}</td>
+                        <td><span class="badge bg-info">{{ r.plan }}</span></td>
+                        <td>{{ r.request_date.strftime('%Y-%m-%d %H:%M') if r.request_date else 'N/A' }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <!-- Approve Form -->
+                                <form method="post" action="{{ url_for('platform.approve_registration', subscription_id=r.subscription_id) }}" style="display:inline">
+                                    <button class="btn btn-success" type="submit" 
+                                            onclick="return confirm('Approve registration for {{ r.institution_name }}?')">
+                                        Approve
+                                    </button>
+                                </form>
+                                
+                                <!-- Reject Form -->
+                                <form method="post" action="{{ url_for('platform.reject_registration', subscription_id=r.subscription_id) }}" style="display:inline">
+                                    <button class="btn btn-danger" type="submit" 
+                                            onclick="return confirm('Reject registration for {{ r.institution_name }}? This action cannot be undone.')">
+                                        Reject
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -43,5 +68,12 @@
 
     </div>
 </div>
+
+<style>
+.avatar-circle {
+    font-size: 12px;
+    font-weight: bold;
+}
+</style>
 
 {% endblock %}

@@ -1,12 +1,12 @@
 # platform_control.py
 from datetime import datetime, timedelta, date
 from functools import wraps
+from unittest import result
 from flask import flash, redirect, url_for, session
 from sqlalchemy.exc import IntegrityError
 from typing import Dict, List, Any, Optional
 from sqlalchemy import or_, func
 import bcrypt
-
 from database.base import get_session
 from application.entities2.user import UserModel
 from application.entities2.institution import InstitutionModel
@@ -515,4 +515,261 @@ class PlatformControl:
             return {
                 'success': False,
                 'error': f'Error fetching dashboard statistics: {str(e)}'
+            }
+        
+    def approve_institution_registration(subscription_id: int) -> Dict[str, Any]:
+        """Activate a pending institution registration.
+    
+        This consolidates the functionality from AuthControl into PlatformControl.
+        """
+        try:
+            with get_session() as db_session:
+                subscription_model = SubscriptionModel(db_session)
+                institution_model = InstitutionModel(db_session)
+                user_model = UserModel(db_session)
+            
+                # Get and activate subscription
+                subscription = subscription_model.get_by_id(subscription_id)
+                if not subscription:
+                    return {'success': False, 'error': 'Subscription not found.'}
+                
+                if subscription.is_active:
+                    return {'success': False, 'error': 'Subscription is already active.'}
+            
+                # Get the institution linked to this subscription
+                institution = institution_model.get_by_subscription_id(subscription_id)
+                if not institution:
+                    return {'success': False, 'error': 'Institution not found for this subscription.'}
+            
+                # Use the entity method to update subscription status
+                success = subscription_model.update_subscription_status(
+                    subscription_id=subscription_id,
+                    new_status='active',
+                    reviewer_id=None  # Can be added as parameter if needed
+                )
+            
+                if not success:
+                    return {
+                        'success': False,
+                        'error': 'Failed to update subscription status.'
+                    }
+            
+                # Set renewal date to 1 year from now
+                subscription.renewal_date = datetime.now() + timedelta(days=365)
+            
+                # Activate the admin user or create if doesn't exist
+                admin_user = user_model.get_by_email(institution.poc_email)
+                temp_password_display = None
+            
+                if admin_user:
+                    admin_user.is_active = True
+                else:
+                    # Create admin user if doesn't exist
+                    import secrets
+                    temp_password = secrets.token_urlsafe(12)
+                    password_hash = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                
+                    admin_user = user_model.create(
+                        institution_id=institution.institution_id,
+                        role='admin',
+                        name=institution.poc_name,
+                        phone_number=institution.poc_phone or '',
+                        email=institution.poc_email,
+                        password_hash=password_hash,
+                        is_active=True
+                    )
+                
+                    # Store temp password for display
+                    temp_password_display = temp_password
+            
+                db_session.commit()
+            
+                result_data = {
+                    'success': True,
+                    'message': f'Institution registration approved for {institution.name}',
+                    'institution_id': institution.institution_id,
+                    'subscription_id': subscription.subscription_id,
+                    'institution_name': institution.name
+                }
+            
+                # Include temp password if user was created
+                if temp_password_display:
+                    result_data['admin_temp_password'] = temp_password_display
+            
+                return result_data
+            
+        except Exception as e:
+            if 'db_session' in locals():
+                db_session.rollback()
+            return {
+                'success': False,
+                'error': f'Error approving institution registration: {str(e)}'
+            }
+        
+    def reject_institution_registration(subscription_id: int) -> Dict[str, Any]:
+        """Reject a pending institution registration and clean up all data.
+    
+        This is an alias for reject_subscription for consistency.
+        """
+        return PlatformControl.reject_subscription(subscription_id)
+
+    def approve_subscription(subscription_id: int, reviewer_id: Optional[int] = None) -> Dict[str, Any]:
+        """Approve a pending subscription and activate the institution.
+    
+        Now uses the consolidated approve_institution_registration method.
+        """
+        # Call the consolidated method
+        result = PlatformControl.approve_institution_registration(subscription_id)
+    
+        # Add reviewer_id to result if needed
+        if result['success'] and reviewer_id:
+            result['reviewer_id'] = reviewer_id
+    
+        return result
+        
+    def reject_subscription(subscription_id: int, reviewer_id: Optional[int] = None) -> Dict[str, Any]:
+        """Reject a pending subscription and clean up associated data."""
+        try:
+            with get_session() as db_session:
+                subscription_model = SubscriptionModel(db_session)
+                institution_model = InstitutionModel(db_session)
+                user_model = UserModel(db_session)
+            
+                # Get the subscription details with institution
+                subscription_data = subscription_model.get_subscription_with_details(subscription_id)
+                if not subscription_data:
+                    return {
+                        'success': False,
+                        'error': 'Subscription not found.'
+                    }
+            
+                institution_data = subscription_data.get('institution')
+                if not institution_data:
+                    return {
+                        'success': False,
+                        'error': 'Institution not found for this subscription.'
+                    }
+            
+                institution_name = institution_data['name']
+                institution_email = institution_data['poc_email']
+            
+                # Get the institution object
+                institution = institution_model.get_by_id(institution_data['institution_id'])
+                if not institution:
+                    return {
+                        'success': False,
+                        'error': 'Institution object not found.'
+                    }
+            
+                # Delete the admin user if exists
+                admin_user = user_model.get_by_email(institution_email)
+                if admin_user:
+                    db_session.delete(admin_user)
+            
+                # Delete the institution
+                db_session.delete(institution)
+            
+                # Delete the subscription
+                subscription = subscription_model.get_by_id(subscription_id)
+                if subscription:
+                    db_session.delete(subscription)
+            
+                db_session.commit()
+            
+                result = {
+                    'success': True,
+                    'message': f'Registration rejected for {institution_name}',
+                    'rejected_institution': institution_name,
+                    'rejected_email': institution_email
+                }
+            
+                # Add reviewer_id to result if provided
+                if reviewer_id:
+                    result['reviewer_id'] = reviewer_id
+            
+                return result
+            
+        except Exception as e:
+            if 'db_session' in locals():
+                db_session.rollback()
+            return {
+                'success': False,
+                'error': f'Error rejecting subscription: {str(e)}'
+            }
+
+    def get_pending_subscriptions() -> Dict[str, Any]:
+        """Get all pending subscription requests."""
+        try:
+            with get_session() as db_session:
+                subscription_model = SubscriptionModel(db_session)
+            
+                # Use the entity method that already exists
+                pending_subs = subscription_model.get_pending_subscriptions()
+            
+                return {
+                    'success': True,
+                    'pending_subscriptions': pending_subs,
+                    'count': len(pending_subs)
+                }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Error fetching pending subscriptions: {str(e)}'
+            }   
+        
+    def get_institution_registration_status(subscription_id: int) -> Dict[str, Any]:
+        """Check the status of an institution registration."""
+        try:
+            with get_session() as db_session:
+                subscription_model = SubscriptionModel(db_session)
+                institution_model = InstitutionModel(db_session)
+            
+                # Get subscription details
+                subscription_data = subscription_model.get_subscription_with_details(subscription_id)
+                if not subscription_data:
+                    return {
+                        'success': False,
+                        'error': 'Registration not found.'
+                    }
+            
+                subscription = subscription_data['subscription']
+                institution = subscription_data.get('institution')
+            
+                if not institution:
+                    return {
+                        'success': False,
+                        'error': 'Institution not found for this registration.'
+                    }
+            
+                # Determine status
+                if subscription['is_active']:
+                    status = 'approved'
+                    status_message = 'Registration approved and active'
+                else:
+                    # Check if it's pending or rejected
+                    # We'll treat inactive subscriptions without an end date as pending
+                    if subscription['end_date'] is None:
+                        status = 'pending'
+                        status_message = 'Registration pending approval'
+                    else:
+                        # If it has an end date but is inactive, it might be suspended or rejected
+                        # For simplicity, we'll call it 'inactive'
+                        status = 'inactive'
+                        status_message = 'Registration not active'
+            
+                return {
+                    'success': True,
+                    'status': status,
+                    'status_message': status_message,
+                    'institution_name': institution['name'],
+                    'institution_email': institution['poc_email'],
+                    'subscription_active': subscription['is_active'],
+                    'admin_user_active': institution.get('poc_email_active', False)  # Would need to check user model
+                }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Error checking registration status: {str(e)}'
             }
