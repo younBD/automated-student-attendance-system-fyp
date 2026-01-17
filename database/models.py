@@ -245,7 +245,7 @@ class AttendanceAppeal(Base, BaseMixin):
     attendance_id = Column(Integer, ForeignKey("attendance_records.attendance_id"), nullable=False)
     student_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
 
-    status = Column(AttendanceAppealStatusEnum, nullable=False)
+    status = Column(AttendanceAppealStatusEnum, nullable=False, server_default="pending")
     reason = Column(Text)
     created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
 

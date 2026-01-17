@@ -10,7 +10,8 @@
         </div>
 
         <div class="card-body-custom">
-            <form method="POST" action=>
+            <form method="POST" action={{ url_for('student.appeal_form_submit', attendance_record_id=attendance_record_id) }}>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <!-- Student Information -->
                 <h5 class="mb-3">Student Details</h5>

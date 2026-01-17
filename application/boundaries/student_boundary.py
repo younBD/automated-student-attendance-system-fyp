@@ -129,9 +129,45 @@ def appeal_form(attendance_record_id):
         if record.student_id != session.get('user_id'):
             flash("You are not authorized to appeal this record.", "error")
             return redirect(url_for('student.appeal_management'))
-        data = ar_model.student_get_attendance_for_appeal(attendance_record_id)
+        appeal = AttendanceAppealModel(db_session).get_one(attendance_id=attendance_record_id)
+        if appeal:
+            flash("An appeal for this attendance record already exists.", "error")
+            return redirect(url_for('student.appeal_management'))
+        data = {
+            "attendance_record_id": attendance_record_id,
+            **ar_model.student_get_attendance_for_appeal(attendance_record_id),
+        }
         
     return render_template('institution/student/student_appeal_management_appeal_form.html', **data)
+
+@student_bp.route('/appeal/form/<int:attendance_record_id>/submit', methods=['POST'], endpoint='appeal_form_submit')
+@requires_roles('student')
+def appeal_form_submit(attendance_record_id):
+    """Handle appeal form submission"""
+    reason = request.form.get('appeal_reason', '').strip()
+    user_id = session.get('user_id')
+    with get_session() as db_session:
+        if not reason:
+            flash("Appeal reason cannot be empty.", "error")
+            return redirect(url_for('student.appeal_form', attendance_record_id=attendance_record_id))
+        ar_model = AttendanceRecordModel(db_session)
+        appeal_model = AttendanceAppealModel(db_session)
+        record = ar_model.get_by_id(attendance_record_id)  # Ensure record exists
+        if record.student_id != user_id:
+            flash("You are not authorized to appeal this record.", "error")
+            return redirect(url_for('student.appeal_management'))
+        existing_appeal = appeal_model.get_one(attendance_id=attendance_record_id)
+        if existing_appeal:
+            flash("An appeal for this attendance record already exists.", "error")
+            return redirect(url_for('student.appeal_management'))
+        
+        appeal_model.create(
+            attendance_id=attendance_record_id,
+            student_id=user_id,
+            reason=reason,
+        )
+    flash("Your appeal has been submitted successfully.", "success")
+    return redirect(url_for('student.appeal_management'))
 
 
 @student_bp.route('/absent-records', endpoint='absent_records')
