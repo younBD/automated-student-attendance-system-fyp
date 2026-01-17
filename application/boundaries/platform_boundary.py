@@ -52,8 +52,7 @@ def pending_registrations():
     else:
         pending_requests = result.get('pending_subscriptions', [])
     
-    return render_template('platmanager/platform_manager_subscription_management_pending_registrations.html', 
-                         user=auth_result['user'], 
+    return render_template('platmanager/platform_manager_subscription_management_pending_registrations.html',
                          requests=pending_requests)
 
 
