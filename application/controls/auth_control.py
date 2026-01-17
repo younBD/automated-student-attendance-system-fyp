@@ -45,6 +45,8 @@ def authenticate_user(email, password):
             user = user_model.get_by_email(email)
             if not user or not getattr(user, 'password_hash', None):
                 return {'success': False, 'error': 'Invalid email or password'}
+            if not user.is_active:
+                return {'success': False, 'error': 'Account suspended. Please contact your institution administrator.'}
             if bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
                 return {
                     'success': True,
@@ -63,6 +65,10 @@ class AuthControl:
         with get_session() as db_session:
             user_model = UserModel(db_session)
             user = user_model.get_by_email(email)
+            if not user or not getattr(user, 'password_hash', None):
+                return {'success': False, 'error': 'Invalid email or password'}
+            if not user.is_active:
+                return {'success': False, 'error': 'Account suspended. Please contact your institution administrator.'}
             if bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
                 return {
                     'success': True,
