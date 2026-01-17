@@ -135,7 +135,6 @@ def user_management():
                 "page": page,
             },
         }
-    print(context)
     return render_template('platmanager/platform_manager_user_management.html', **context)
 
 

@@ -46,12 +46,62 @@
         </div>
     </div>
 
+    <!-- Classes Eligible for Appeal -->
+    <div class="card-custom mb-4">
+        <div class="card-header-custom justify-content-between">
+            Classes Eligible for Appeal
+            <span class="badge bg-secondary">{{ absent_late|length if absent_late else 0 }}</span>
+        </div>
+        
+        <div class="card-body-custom p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Module Code</th>
+                        <th>Class Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% if absent_late %}
+                    {% for record in absent_late %}
+                    <tr>
+                        <td>{{ record.course_code }} - {{ record.course_name }}</td>
+                        <td>{{ record.start_date }}</td>
+                        <td>
+                            {% if record.status == 'absent' %}
+                                <span class="badge bg-danger">Absent</span>
+                            {% elif record.status == 'late' %}
+                                <span class="badge bg-warning text-dark">Late</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('student.appeal_form', attendance_record_id=record.attendance_id) }}" class="btn btn-sm btn-primary">
+                                Submit Appeal
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            No classes available for appeal
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Appeals Table -->
     <div class="card-custom">
         <div class="card-header-custom justify-content-between">
             Submitted Appeals
-            <button class="btn-primary text-end">New Appeal</button>
         </div>
+        
 
         <div class="card-body-custom p-0">
             <table class="table table-hover mb-0">
@@ -61,6 +111,7 @@
                         <th>Class Date</th>
                         <th>Reason</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -89,6 +140,13 @@
                                 <span class="badge bg-success">Approved</span>
                             {% elif appeal.status == 'rejected' %}
                                 <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if appeal.status == 'pending' %}
+                                <a href="{{ url_for('student.appeal_retract', appeal_id=appeal.id) }}" class="btn btn-sm btn-primary">
+                                    Retract
+                                </a>
                             {% endif %}
                         </td>
                     </tr>

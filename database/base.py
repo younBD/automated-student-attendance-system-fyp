@@ -44,7 +44,7 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_size=20,
     max_overflow=30,
-    echo=True,
+    # echo=True,
     connect_args=connect_args
 )
 
