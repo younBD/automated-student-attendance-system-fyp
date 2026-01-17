@@ -3,6 +3,8 @@ from database.models import Class, Course, Venue, User, CourseUser, AttendanceRe
 from datetime import date, datetime, timedelta
 from sqlalchemy import func, extract, case
 from sqlalchemy.orm import aliased
+from collections import defaultdict
+import calendar
 
 class ClassModel(BaseEntity[Class]):
     """Specific entity for User model with custom methods"""
@@ -132,7 +134,6 @@ class ClassModel(BaseEntity[Class]):
     def student_attendance_monthly(self, user_id, num_months: int=4):
         n_months_ago = datetime.now() - timedelta(days=30 * num_months)
         cutoff_date = n_months_ago.replace(day=1)
-        print(cutoff_date)
         headers = ["year", "month", "total_classes", "p", "a", "l", "e"]
         return self.add_headers(headers, (
             self.session.query(
@@ -228,18 +229,232 @@ class ClassModel(BaseEntity[Class]):
         )
 
     def get_attendance_statistics(self, course_id, lecturer_id, start_date, end_date):
-        """Get attendance statistics for a course"""
-        # This would calculate statistics like attendance trends, distribution, etc.
-        # Implementation depends on your specific statistics needs
+        """Get attendance statistics for a course
+        
+        Args:
+            course_id: ID of the course
+            lecturer_id: ID of the lecturer
+            start_date: Start date for statistics calculation
+            end_date: End date for statistics calculation
+            
+        Returns:
+            Dictionary containing:
+            - attendance_trend: List of attendance percentages over time
+            - trend_labels: Labels for the trend data points
+            - distribution: Distribution of students by attendance performance
+            - total_classes: Total number of classes in the period
+            - total_attendance: Overall attendance percentage
+            - total_students: Total number of students enrolled
+        """
+        # Get all classes for this course in the date range
+        classes = (
+            self.session.query(Class)
+            .filter(Class.course_id == course_id)
+            .filter(Class.lecturer_id == lecturer_id)
+            .filter(Class.start_time >= datetime.combine(start_date, datetime.min.time()))
+            .filter(Class.start_time <= datetime.combine(end_date, datetime.max.time()))
+            .order_by(Class.start_time)
+            .all()
+        )
+        
+        if not classes:
+            return {
+                'attendance_trend': [],
+                'trend_labels': [],
+                'distribution': {'excellent': 0, 'good': 0, 'average': 0, 'bad': 0},
+                'total_classes': 0,
+                'total_attendance': 0,
+                'total_students': 0
+            }
+        
+        class_ids = [c.class_id for c in classes]
+        
+        # Get all attendance records for these classes
+        attendance_records = (
+            self.session.query(AttendanceRecord)
+            .filter(AttendanceRecord.class_id.in_(class_ids))
+            .all()
+        )
+
+        # Get all students enrolled in the course
+        course_students = (
+            self.session.query(CourseUser.user_id)
+            .filter(CourseUser.course_id == course_id)
+            .all()
+        )
+
+        student_ids = [s[0] for s in course_students]
+        
+        # Determine time period grouping based on date range
+        days_diff = (end_date - start_date).days
+        
+        # Calculate attendance trend by period
+        # For week: group by day, for month: group by week, for semester: group by month
+        if days_diff <= 7:
+            # Week view: group by day
+            period_key_format = '%Y-%m-%d'
+            max_periods = 7
+        elif days_diff <= 35:
+            # Month view: group by week
+            period_key_format = '%Y-W%U'
+            max_periods = 5
+        else:
+            # Semester view: group by month
+            period_key_format = '%Y-%m'
+            max_periods = 5
+        
+        # Calculate attendance trend by period
+        # For each period, calculate: (students who attended / total possible attendances) * 100
+        period_stats = defaultdict(lambda: {'total_possible': 0, 'present': 0})
+        
+        # Count total possible attendances per period (classes * students)
+        for cls in classes:
+            if days_diff <= 7:
+                period_key = cls.start_time.strftime(period_key_format)
+            elif days_diff <= 35:
+                # Week number
+                period_key = cls.start_time.strftime(period_key_format)
+            else:
+                period_key = cls.start_time.strftime(period_key_format)
+            
+            period_stats[period_key]['total_possible'] += len(student_ids) if student_ids else 0
+        
+        # Count actual attendances per period
+        for record in attendance_records:
+            if record.class_id in class_ids and record.student_id in student_ids:
+                cls = next((c for c in classes if c.class_id == record.class_id), None)
+                if cls and record.status in ['present', 'late']:
+                    if days_diff <= 7:
+                        period_key = cls.start_time.strftime(period_key_format)
+                    elif days_diff <= 35:
+                        period_key = cls.start_time.strftime(period_key_format)
+                    else:
+                        period_key = cls.start_time.strftime(period_key_format)
+                    
+                    period_stats[period_key]['present'] += 1
+        
+        # Build trend data
+        trend_data = []
+        trend_labels = []
+        
+        # Sort periods chronologically
+        sorted_periods = sorted(period_stats.keys())
+        
+        # Get last N periods or all available
+        periods_to_show = sorted_periods[-max_periods:] if len(sorted_periods) > max_periods else sorted_periods
+        
+        for period_key in periods_to_show:
+            stats = period_stats[period_key]
+            if stats['total_possible'] > 0:
+                attendance_rate = (stats['present'] / stats['total_possible']) * 100
+                trend_data.append(round(attendance_rate, 1))
+                
+                # Format label based on period type
+                if days_diff <= 7:
+                    # Day label (e.g., "Mon 15")
+                    try:
+                        period_date = datetime.strptime(period_key, '%Y-%m-%d').date()
+                        trend_labels.append(period_date.strftime('%a %d'))
+                    except:
+                        trend_labels.append(period_key.split('-')[-1])
+                elif days_diff <= 35:
+                    # Week label (e.g., "W12")
+                    try:
+                        year, week = period_key.split('-W')
+                        trend_labels.append(f"W{week}")
+                    except:
+                        trend_labels.append(period_key)
+                else:
+                    # Month label (e.g., "Jan")
+                    try:
+                        month_num = int(period_key.split('-')[1])
+                        trend_labels.append(calendar.month_abbr[month_num])
+                    except:
+                        trend_labels.append(period_key)
+            else:
+                trend_data.append(0)
+                # Add appropriate label even for zero data
+                if days_diff <= 7:
+                    try:
+                        period_date = datetime.strptime(period_key, '%Y-%m-%d').date()
+                        trend_labels.append(period_date.strftime('%a %d'))
+                    except:
+                        trend_labels.append('')
+                elif days_diff <= 35:
+                    try:
+                        year, week = period_key.split('-W')
+                        trend_labels.append(f"W{week}")
+                    except:
+                        trend_labels.append('')
+                else:
+                    try:
+                        month_num = int(period_key.split('-')[1])
+                        trend_labels.append(calendar.month_abbr[month_num])
+                    except:
+                        trend_labels.append('')
+        
+        # Calculate distribution: Get each student's attendance rate
+        student_attendance = defaultdict(lambda: {'total': 0, 'present': 0})
+        
+        # Count attendance for each student
+        for cls in classes:
+            for student_id in student_ids:
+                student_attendance[student_id]['total'] += 1
+                # Check if student was present/late for this class
+                record = None
+                for r in attendance_records:
+                    if r.class_id == cls.class_id and r.student_id == student_id:
+                        record = r
+                        break
+                if record and record.status in ['present', 'late']:
+                    student_attendance[student_id]['present'] += 1
+        
+        # Calculate distribution
+        excellent_count = 0  # ≥90%
+        good_count = 0       # 80-89%
+        average_count = 0    # 70-79%
+        bad_count = 0        # <70%
+        
+        for student_id, stats in student_attendance.items():
+            if stats['total'] > 0:
+                rate = (stats['present'] / stats['total']) * 100
+                if rate >= 90:
+                    excellent_count += 1
+                elif rate >= 80:
+                    good_count += 1
+                elif rate >= 70:
+                    average_count += 1
+                else:
+                    bad_count += 1
+        
+        total_students = len(student_attendance)
+        if total_students > 0:
+            excellent_pct = round((excellent_count / total_students) * 100)
+            good_pct = round((good_count / total_students) * 100)
+            average_pct = round((average_count / total_students) * 100)
+            bad_pct = round((bad_count / total_students) * 100)
+        else:
+            excellent_pct = good_pct = average_pct = bad_pct = 0
+        
+        # Calculate overall attendance rate
+        # Count only records for enrolled students
+        total_present = sum(1 for r in attendance_records 
+                           if r.status in ['present', 'late'] and r.student_id in student_ids)
+        total_possible = len(classes) * len(student_ids) if student_ids and len(classes) > 0 else 0
+        overall_attendance = (total_present / total_possible * 100) if total_possible > 0 else 0
+        
         return {
-            'attendance_trend': [],  # List of daily/weekly attendance percentages
-            'distribution': {  # Distribution of attendance performance
-                'excellent': 50,  # ≥90%
-                'good': 40,      # 80-89%
-                'average': 10    # 70-79%
+            'attendance_trend': trend_data,
+            'trend_labels': trend_labels,
+            'distribution': {
+                'excellent': excellent_pct,
+                'good': good_pct,
+                'average': average_pct,
+                'bad': bad_pct
             },
-            'total_classes': 25,
-            'total_attendance': 85  # Percentage
+            'total_classes': len(classes),
+            'total_attendance': round(overall_attendance, 1),
+            'total_students': total_students
         }
 
     def get_classes_for_course(self, course_id, lecturer_id):

@@ -206,10 +206,7 @@ def attendance_statistics():
     try:
         with get_session() as db_session:
             class_model = ClassModel(db_session)
-            course_model = CourseModel(db_session)
-            user_model = UserModel(db_session)
-            attendance_model = AttendanceRecordModel(db_session)
-            
+            course_model = CourseModel(db_session)            
             lecturer_id = get_lecturer_id()
             
             # Get lecturer's courses
@@ -223,7 +220,14 @@ def attendance_statistics():
                 selected_course = courses[0]
             
             # Get statistics data
-            statistics_data = {}
+            statistics_data = {
+                'attendance_trend': [],
+                'trend_labels': [],
+                'distribution': {'excellent': 0, 'good': 0, 'average': 0, 'bad': 0},
+                'total_classes': 0,
+                'total_attendance': 0,
+                'total_students': 0
+            }
             if selected_course:
                 # Calculate date range based on time period
                 end_date = date.today()
@@ -243,6 +247,26 @@ def attendance_statistics():
                     end_date
                 )
             
+            # Format statistics data for template
+            attendance_trend = statistics_data.get('attendance_trend', [])
+            trend_labels = statistics_data.get('trend_labels', [])
+            distribution = statistics_data.get('distribution', {'excellent': 0, 'good': 0, 'average': 0, 'bad': 0})
+            
+            # Ensure we have at least 5 data points for the chart
+            while len(attendance_trend) < 5:
+                attendance_trend.insert(0, 0)
+                if trend_labels:
+                    prev_month = (datetime.now().month - len(attendance_trend)) % 12
+                    if prev_month == 0:
+                        prev_month = 12
+                    trend_labels.insert(0, calendar.month_abbr[prev_month])
+                else:
+                    trend_labels.insert(0, '')
+            
+            # Take only last 5 for display
+            attendance_trend = attendance_trend[-5:]
+            trend_labels = trend_labels[-5:]
+            
             context = {
                 'courses': [
                     {
@@ -259,7 +283,14 @@ def attendance_statistics():
                 },
                 'time_period': time_period,
                 'tutorial_group': tutorial_group,
-                'statistics': statistics_data,
+                'statistics': {
+                    'attendance_trend': attendance_trend,
+                    'trend_labels': trend_labels,
+                    'distribution': distribution,
+                    'total_classes': statistics_data.get('total_classes', 0),
+                    'total_attendance': statistics_data.get('total_attendance', 0),
+                    'total_students': statistics_data.get('total_students', 0)
+                },
                 'current_time': datetime.now().strftime('%I:%M %p'),
                 'current_date': date.today().strftime('%d %B %Y')
             }
