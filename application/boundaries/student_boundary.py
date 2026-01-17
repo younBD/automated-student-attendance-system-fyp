@@ -169,6 +169,27 @@ def appeal_form_submit(attendance_record_id):
     flash("Your appeal has been submitted successfully.", "success")
     return redirect(url_for('student.appeal_management'))
 
+@student_bp.route('/appeal/retract/<int:appeal_id>', endpoint='appeal_retract')
+@requires_roles('student')
+def appeal_retract(appeal_id):
+    """Handle appeal retraction"""
+    user_id = session.get('user_id')
+    with get_session() as db_session:
+        appeal_model = AttendanceAppealModel(db_session)
+        appeal = appeal_model.get_one(appeal_id=appeal_id)
+        if not appeal:
+            flash("Appeal does not exist.", "error")
+            return redirect(url_for('student.appeal_management'))
+        if appeal.student_id != user_id:
+            flash("You are not authorized to retract this appeal.", "error")
+            return redirect(url_for('student.appeal_management'))
+        if appeal.status != "pending":
+            flash("Only pending appeals can be retracted.", "error")
+            return redirect(url_for('student.appeal_management'))
+        
+        appeal_model.delete(appeal.appeal_id)
+    flash("Your appeal has been retracted successfully.", "success")
+    return redirect(url_for('student.appeal_management'))
 
 @student_bp.route('/absent-records', endpoint='absent_records')
 @requires_roles('student')

@@ -1,5 +1,5 @@
 from .base_entity import BaseEntity
-from database.models import Class, Course, Venue, User, CourseUser, AttendanceRecord, Semester
+from database.models import Class, Course, Venue, User, CourseUser, AttendanceRecord, Semester, AttendanceAppeal
 from datetime import date, datetime, timedelta
 from sqlalchemy import func, extract, case
 from sqlalchemy.orm import aliased
@@ -120,9 +120,14 @@ class ClassModel(BaseEntity[Class]):
                 (AttendanceRecord.class_id == Class.class_id) &
                 (AttendanceRecord.student_id == user_id)
             )
+            .outerjoin(
+                AttendanceAppeal,
+                AttendanceAppeal.attendance_id == AttendanceRecord.attendance_id
+            )
             .filter((Semester.start_date <= func.now()) & (Semester.end_date >= func.now()))
             .filter(CourseUser.user_id == user_id)
             .filter(User.role == "student")
+            .filter(AttendanceAppeal.attendance_id.is_(None)) # Exclude appealed records
             .distinct(Class.class_id)
             .all()
         )

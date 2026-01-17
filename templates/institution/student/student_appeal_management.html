@@ -60,6 +60,7 @@
                         <th>Class Date</th>
                         <th>Reason</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -88,6 +89,13 @@
                                 <span class="badge bg-success">Approved</span>
                             {% elif appeal.status == 'rejected' %}
                                 <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if appeal.status == 'pending' %}
+                                <a href="{{ url_for('student.appeal_retract', appeal_id=appeal.id) }}" class="btn btn-sm btn-primary">
+                                    Retract
+                                </a>
                             {% endif %}
                         </td>
                     </tr>
