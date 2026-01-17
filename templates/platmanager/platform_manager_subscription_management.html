@@ -3,532 +3,6 @@
 {% block title %}Institutions & Subscriptions - Platform Manager{% endblock %}
 
 {% block content %}
-<div class="platform-manager-subscription-management">
-    <!-- Page Header -->
-    <div class="page-header mb-4">
-        <h1 class="page-title">Institutions & Subscriptions</h1>
-        <div class="breadcrumb">
-            <a href="{{ url_for('platform.platform_dashboard') }}">Dashboard</a> / 
-            <span>Institutions & Subscriptions</span>
-        </div>
-        <p class="page-subtitle">Manage institution profiles and handle subscription requests.</p>
-    </div>
-
-    <!-- Dashboard Grid -->
-    <div class="subscription-grid">
-        <!-- Left Column -->
-        <div class="left-column">
-            <!-- Overview Card -->
-            <div class="card-custom mb-4">
-                <div class="card-header-custom">Institutions & Subscription Overview</div>
-                <div class="card-body-custom">
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <div class="stat-label">Total Institutions</div>
-                            <div class="stat-value">47</div>
-                            <div class="stat-change positive">+3 this quarter</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Active Institutions</div>
-                            <div class="stat-value">42</div>
-                            <div class="stat-change positive">+5% growth</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Suspended Subscriptions</div>
-                            <div class="stat-value">3</div>
-                            <div class="stat-change negative">-1 this month</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Pending Requests</div>
-                            <div class="stat-value">5</div>
-                            <div class="stat-change neutral">Awaiting review</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions Card -->
-            <div class="card-custom">
-                <div class="card-header-custom">Quick Actions</div>
-                <div class="card-body-custom">
-                    <div class="quick-actions">
-                        <button class="btn-custom btn-create-institution" id="createInstitutionBtn">
-                            <span class="btn-icon">🏛️</span>
-                            Create Institution Profile
-                        </button>
-                        <button class="btn-custom btn-view-pending" id="viewPendingBtn">
-                            <span class="btn-icon">📋</span>
-                            View Pending Subscription Requests
-                        </button>
-                        
-                        <div class="search-section mt-3">
-                            <div class="search-box">
-                                <input type="text" placeholder="Search by institution name, contact, or plan..." class="search-input">
-                                <button class="btn-custom btn-search">Search</button>
-                            </div>
-                        </div>
-
-                        <div class="filter-section mt-3">
-                            <select class="filter-select">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="suspended">Suspended</option>
-                                <option value="pending">Pending</option>
-                                <option value="expired">Expired</option>
-                            </select>
-                            <select class="filter-select">
-                                <option value="">All Plans</option>
-                                <option value="starter">Starter</option>
-                                <option value="pro">Professional</option>
-                                <option value="enterprise">Enterprise</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                            <button class="btn-custom btn-outline-custom btn-reset">Reset Filters</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column -->
-        <div class="right-column">
-            <!-- Institution Profiles Card -->
-            <div class="card-custom mb-4">
-                <div class="card-header-custom">
-                    <div class="header-content">
-                        <span>Institution Profiles</span>
-                        <span class="institution-count">5 institutions</span>
-                    </div>
-                </div>
-                <div class="card-body-custom">
-                    <!-- Table Container -->
-                    <div class="table-container">
-                        <table class="institutions-table">
-                            <thead>
-                                <tr>
-                                    <th>Institution Name</th>
-                                    <th>Plan</th>
-                                    <th>Created On</th>
-                                    <th>Subscription Renewal</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">UT</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">University of Technology</div>
-                                                <div class="institution-location">Singapore</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="plan-badge enterprise">Enterprise</span>
-                                    </td>
-                                    <td>Jan 15, 2026</td>
-                                    <td>Jan 15, 2027</td>
-                                    <td>
-                                        <span class="status-badge suspended">Suspended</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-view" title="View Details">
-                                                <span class="action-icon">👁️</span>
-                                            </button>
-                                            <button class="btn-action btn-edit" title="Edit Institution">
-                                                <span class="action-icon">✏️</span>
-                                            </button>
-                                            <button class="btn-action btn-activate" title="Activate Subscription">
-                                                <span class="action-icon">✅</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">CC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">City College</div>
-                                                <div class="institution-location">Malaysia</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="plan-badge pro">Professional</span>
-                                    </td>
-                                    <td>Mar 22, 2026</td>
-                                    <td>Mar 22, 2027</td>
-                                    <td>
-                                        <span class="status-badge active">Active</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-view" title="View Details">
-                                                <span class="action-icon">👁️</span>
-                                            </button>
-                                            <button class="btn-action btn-edit" title="Edit Institution">
-                                                <span class="action-icon">✏️</span>
-                                            </button>
-                                            <button class="btn-action btn-suspend" title="Suspend Subscription">
-                                                <span class="action-icon">⏸️</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">TI</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Tech Institute</div>
-                                                <div class="institution-location">Indonesia</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="plan-badge starter">Starter</span>
-                                    </td>
-                                    <td>Feb 10, 2026</td>
-                                    <td>Feb 10, 2027</td>
-                                    <td>
-                                        <span class="status-badge pending">Pending</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-view" title="View Details">
-                                                <span class="action-icon">👁️</span>
-                                            </button>
-                                            <button class="btn-action btn-edit" title="Edit Institution">
-                                                <span class="action-icon">✏️</span>
-                                            </button>
-                                            <button class="btn-action btn-approve" title="Approve Subscription">
-                                                <span class="action-icon">✓</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">SA</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Science Academy</div>
-                                                <div class="institution-location">Thailand</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="plan-badge pro">Professional</span>
-                                    </td>
-                                    <td>Apr 05, 2026</td>
-                                    <td>Apr 05, 2027</td>
-                                    <td>
-                                        <span class="status-badge active">Active</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-view" title="View Details">
-                                                <span class="action-icon">👁️</span>
-                                            </button>
-                                            <button class="btn-action btn-edit" title="Edit Institution">
-                                                <span class="action-icon">✏️</span>
-                                            </button>
-                                            <button class="btn-action btn-suspend" title="Suspend Subscription">
-                                                <span class="action-icon">⏸️</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">BC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Business College</div>
-                                                <div class="institution-location">Vietnam</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="plan-badge custom">Custom</span>
-                                    </td>
-                                    <td>May 18, 2026</td>
-                                    <td>May 18, 2027</td>
-                                    <td>
-                                        <span class="status-badge active">Active</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-view" title="View Details">
-                                                <span class="action-icon">👁️</span>
-                                            </button>
-                                            <button class="btn-action btn-edit" title="Edit Institution">
-                                                <span class="action-icon">✏️</span>
-                                            </button>
-                                            <button class="btn-action btn-suspend" title="Suspend Subscription">
-                                                <span class="action-icon">⏸️</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    <div class="pagination-section">
-                        <div class="pagination-info">
-                            Showing 1-5 of 47 institutions
-                        </div>
-                        <div class="pagination-controls">
-                            <button class="btn-custom btn-outline-custom btn-prev" disabled>Previous</button>
-                            <span class="page-numbers">
-                                <span class="page-current">1</span>
-                                <a href="#" class="page-link">2</a>
-                                <a href="#" class="page-link">3</a>
-                                <span class="page-ellipsis">...</span>
-                                <a href="#" class="page-link">10</a>
-                            </span>
-                            <a href="#" class="btn-custom btn-outline-custom btn-next">Next</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Subscription Requests Card -->
-            <div class="card-custom">
-                <div class="card-header-custom">
-                    <div class="header-content">
-                        <span>Subscription Requests</span>
-                        <span class="request-count">5 pending requests</span>
-                    </div>
-                </div>
-                <div class="card-body-custom">
-                    <!-- Table Container -->
-                    <div class="table-container">
-                        <table class="subscriptions-table">
-                            <thead>
-                                <tr>
-                                    <th>Institution Name</th>
-                                    <th>Contact Person</th>
-                                    <th>Request Date</th>
-                                    <th>Plan Requested</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">LC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Law College</div>
-                                                <div class="institution-location">Philippines</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="contact-info">
-                                            <div class="contact-name">Michael Chen</div>
-                                            <div class="contact-email">michael.chen@lawcollege.edu</div>
-                                        </div>
-                                    </td>
-                                    <td>Dec 01, 2026</td>
-                                    <td>
-                                        <span class="plan-badge pro">Professional</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge pending">Pending</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-review" title="Review Request">
-                                                <span class="action-icon">📄</span>
-                                            </button>
-                                            <button class="btn-action btn-approve" title="Approve Request">
-                                                <span class="action-icon">✓</span>
-                                            </button>
-                                            <button class="btn-action btn-reject" title="Reject Request">
-                                                <span class="action-icon">✗</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">AC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Arts College</div>
-                                                <div class="institution-location">Singapore</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="contact-info">
-                                            <div class="contact-name">Sarah Wong</div>
-                                            <div class="contact-email">sarah.wong@artscollege.edu</div>
-                                        </div>
-                                    </td>
-                                    <td>Dec 02, 2026</td>
-                                    <td>
-                                        <span class="plan-badge starter">Starter</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge pending">Pending</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-review" title="Review Request">
-                                                <span class="action-icon">📄</span>
-                                            </button>
-                                            <button class="btn-action btn-approve" title="Approve Request">
-                                                <span class="action-icon">✓</span>
-                                            </button>
-                                            <button class="btn-action btn-reject" title="Reject Request">
-                                                <span class="action-icon">✗</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">MC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Medical College</div>
-                                                <div class="institution-location">Malaysia</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="contact-info">
-                                            <div class="contact-name">Dr. Ahmad Hassan</div>
-                                            <div class="contact-email">ahmad.hassan@medicalcollege.edu</div>
-                                        </div>
-                                    </td>
-                                    <td>Dec 03, 2026</td>
-                                    <td>
-                                        <span class="plan-badge enterprise">Enterprise</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge pending">Pending</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-review" title="Review Request">
-                                                <span class="action-icon">📄</span>
-                                            </button>
-                                            <button class="btn-action btn-approve" title="Approve Request">
-                                                <span class="action-icon">✓</span>
-                                            </button>
-                                            <button class="btn-action btn-reject" title="Reject Request">
-                                                <span class="action-icon">✗</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">EC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Engineering College</div>
-                                                <div class="institution-location">Indonesia</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="contact-info">
-                                            <div class="contact-name">Robert Lee</div>
-                                            <div class="contact-email">robert.lee@engineeringcollege.edu</div>
-                                        </div>
-                                    </td>
-                                    <td>Dec 04, 2026</td>
-                                    <td>
-                                        <span class="plan-badge pro">Professional</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge pending">Pending</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-review" title="Review Request">
-                                                <span class="action-icon">📄</span>
-                                            </button>
-                                            <button class="btn-action btn-approve" title="Approve Request">
-                                                <span class="action-icon">✓</span>
-                                            </button>
-                                            <button class="btn-action btn-reject" title="Reject Request">
-                                                <span class="action-icon">✗</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="institution-info">
-                                            <div class="institution-avatar">DC</div>
-                                            <div class="institution-details">
-                                                <div class="institution-name">Design College</div>
-                                                <div class="institution-location">Thailand</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="contact-info">
-                                            <div class="contact-name">Lisa Park</div>
-                                            <div class="contact-email">lisa.park@designcollege.edu</div>
-                                        </div>
-                                    </td>
-                                    <td>Dec 05, 2026</td>
-                                    <td>
-                                        <span class="plan-badge custom">Custom</span>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge pending">Pending</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-review" title="Review Request">
-                                                <span class="action-icon">📄</span>
-                                            </button>
-                                            <button class="btn-action btn-approve" title="Approve Request">
-                                                <span class="action-icon">✓</span>
-                                            </button>
-                                            <button class="btn-action btn-reject" title="Reject Request">
-                                                <span class="action-icon">✗</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    <div class="pagination-section">
-                        <div class="pagination-info">
-                            Showing 1-5 of 5 pending requests
-                        </div>
-                        <div class="pagination-controls">
-                            <button class="btn-custom btn-outline-custom btn-prev" disabled>Previous</button>
-                            <span class="page-numbers">
-                                <span class="page-current">1</span>
-                            </span>
-                            <button class="btn-custom btn-outline-custom btn-next" disabled>Next</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     /* Subscription Management Specific Styles */
@@ -1185,8 +659,428 @@
     }
 </style>
 
+<div class="platform-manager-subscription-management">
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <h1 class="page-title">Institutions & Subscriptions</h1>
+        <div class="breadcrumb">
+            <a href="{{ url_for('platform.platform_dashboard') }}">Dashboard</a> / 
+            <span>Institutions & Subscriptions</span>
+        </div>
+        <p class="page-subtitle">Manage institution profiles and handle subscription requests.</p>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="subscription-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Overview Card -->
+            <div class="card-custom mb-4">
+                <div class="card-header-custom">Institutions & Subscription Overview</div>
+                <div class="card-body-custom">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Institutions</div>
+                            <div class="stat-value">{{ stats.total_institutions if stats else 47 }}</div>
+                            <div class="stat-change positive">+{{ stats.new_institutions_quarter if stats else 3 }} this quarter</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Active Institutions</div>
+                            <div class="stat-value">{{ stats.active_institutions if stats else 42 }}</div>
+                            <div class="stat-change positive">+5% growth</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Suspended Subscriptions</div>
+                            <div class="stat-value">{{ stats.suspended_institutions if stats else 3 }}</div>
+                            <div class="stat-change negative">-1 this month</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Pending Requests</div>
+                            <div class="stat-value">{{ stats.pending_requests if stats else 5 }}</div>
+                            <div class="stat-change neutral">Awaiting review</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">Quick Actions</div>
+                <div class="card-body-custom">
+                    <div class="quick-actions">
+                        <button class="btn-custom btn-create-institution" id="createInstitutionBtn">
+                            <span class="btn-icon">🏛️</span>
+                            Create Institution Profile
+                        </button>
+                        <button class="btn-custom btn-view-pending" id="viewPendingBtn">
+                            <span class="btn-icon">📋</span>
+                            View Pending Subscription Requests
+                        </button>
+                        
+                        <div class="search-section mt-3">
+                            <div class="search-box">
+                                <input type="text" 
+                                       placeholder="Search by institution name, contact, or plan..." 
+                                       class="search-input" 
+                                       id="searchInput"
+                                       value="{{ search_term }}">
+                                <button class="btn-custom btn-search" id="searchButton">Search</button>
+                            </div>
+                        </div>
+
+                        <div class="filter-section mt-3">
+                            <select class="filter-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                            </select>
+                            <select class="filter-select" id="planFilter">
+                                <option value="">All Plans</option>
+                                <option value="starter" {% if plan_filter == 'starter' %}selected{% endif %}>Starter</option>
+                                <option value="pro" {% if plan_filter == 'pro' %}selected{% endif %}>Professional</option>
+                                <option value="enterprise" {% if plan_filter == 'enterprise' %}selected{% endif %}>Enterprise</option>
+                                <option value="custom" {% if plan_filter == 'custom' %}selected{% endif %}>Custom</option>
+                            </select>
+                            <button class="btn-custom btn-outline-custom btn-reset" id="resetFilters">Reset Filters</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- Institution Profiles Card -->
+            <div class="card-custom mb-4">
+                <div class="card-header-custom">
+                    <div class="header-content">
+                        <span>Institution Profiles</span>
+                        <span class="institution-count">
+                            {{ institutions|length if institutions else 0 }} institutions
+                            {% if search_term or status_filter or plan_filter %}
+                                (filtered from {{ total_institutions }})
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body-custom">
+                    <!-- Table Container -->
+                    <div class="table-container">
+                        <table class="institutions-table">
+                            <thead>
+                                <tr>
+                                    <th>Institution Name</th>
+                                    <th>Plan</th>
+                                    <th>Created On</th>
+                                    <th>Subscription Renewal</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="institutionsTableBody">
+                                {% if institutions %}
+                                    {% for institution in institutions %}
+                                        <tr data-institution-id="{{ institution.institution_id }}" 
+                                            data-subscription-id="{{ institution.subscription_id }}">
+                                            <td>
+                                                <div class="institution-info">
+                                                    <div class="institution-avatar">{{ institution.initials if institution.initials else institution.name[:2].upper() }}</div>
+                                                    <div class="institution-details">
+                                                        <div class="institution-name">{{ institution.name }}</div>
+                                                        <div class="institution-location">{{ institution.location }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="plan-badge {{ institution.plan|lower }}">
+                                                    {{ institution.plan|title if institution.plan != 'none' else 'No Plan' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {{ institution.subscription_start_date }}
+                                            </td>
+                                            <td>
+                                                {{ institution.subscription_end_date }}
+                                            </td>
+                                            <td>
+                                                <span class="status-badge {{ institution.status|lower }}">
+                                                    {{ institution.status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn-action btn-view" 
+                                                            title="View Details"
+                                                            onclick="viewInstitutionDetails('{{ institution.institution_id }}')">
+                                                        <span class="action-icon">👁️</span>
+                                                    </button>
+                                                    <button class="btn-action btn-edit" 
+                                                            title="Edit Institution"
+                                                            onclick="editInstitution('{{ institution.institution_id }}')">
+                                                        <span class="action-icon">✏️</span>
+                                                    </button>
+                                                    {% if institution.status == 'active' %}
+                                                        <button class="btn-action btn-suspend" 
+                                                                title="Suspend Subscription"
+                                                                onclick="updateSubscriptionStatus('{{ institution.subscription_id }}', 'suspended', '{{ institution.name }}')">
+                                                            <span class="action-icon">⏸️</span>
+                                                        </button>
+                                                    {% elif institution.status == 'suspended' %}
+                                                        <button class="btn-action btn-activate" 
+                                                                title="Activate Subscription"
+                                                                onclick="updateSubscriptionStatus('{{ institution.subscription_id }}', 'active', '{{ institution.name }}')">
+                                                            <span class="action-icon">✅</span>
+                                                        </button>
+                                                    {% elif institution.status == 'pending' %}
+                                                        <button class="btn-action btn-approve" 
+                                                                title="Approve Subscription"
+                                                                onclick="processSubscriptionRequest('{{ institution.subscription_id }}', 'approve', '{{ institution.name }}')">
+                                                            <span class="action-icon">✓</span>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            {% if search_term or status_filter or plan_filter %}
+                                                No institutions found matching your filters.
+                                            {% else %}
+                                                No institutions found. Create your first institution profile.
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-section">
+                        <div class="pagination-info">
+                            Showing 
+                            {% if institutions %}
+                                {{ start_idx }}-{{ end_idx }} of {{ total_institutions }} institutions
+                            {% else %}
+                                0-0 of 0 institutions
+                            {% endif %}
+                        </div>
+                        <div class="pagination-controls">
+                            {% if has_prev %}
+                                <a href="{{ url_for('platform.subscription_management', page=current_page-1, search=search_term, status=status_filter, plan=plan_filter) }}"
+                                   class="btn-custom btn-outline-custom btn-prev">
+                                    Previous
+                                </a>
+                            {% else %}
+                                <button class="btn-custom btn-outline-custom btn-prev" disabled>Previous</button>
+                            {% endif %}
+                            
+                            <span class="page-numbers">
+                                {% if total_pages > 1 %}
+                                    {% for page_num in range(1, total_pages + 1) %}
+                                        {% if page_num == current_page %}
+                                            <span class="page-current">{{ page_num }}</span>
+                                        {% elif page_num <= 3 or page_num > total_pages - 2 or (page_num >= current_page - 1 and page_num <= current_page + 1) %}
+                                            <a href="{{ url_for('platform.subscription_management', page=page_num, search=search_term, status=status_filter, plan=plan_filter) }}"
+                                               class="page-link">{{ page_num }}</a>
+                                        {% elif page_num == 4 and current_page > 5 %}
+                                            <span class="page-ellipsis">...</span>
+                                        {% elif page_num == total_pages - 3 and current_page < total_pages - 4 %}
+                                            <span class="page-ellipsis">...</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="page-current">1</span>
+                                {% endif %}
+                            </span>
+                            
+                            {% if has_next %}
+                                <a href="{{ url_for('platform.subscription_management', page=current_page+1, search=search_term, status=status_filter, plan=plan_filter) }}"
+                                   class="btn-custom btn-outline-custom btn-next">
+                                    Next
+                                </a>
+                            {% else %}
+                                <button class="btn-custom btn-outline-custom btn-next" disabled>Next</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Requests Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">
+                    <div class="header-content">
+                        <span>Subscription Requests</span>
+                        <span class="request-count">{{ subscription_requests|length if subscription_requests else 0 }} pending requests</span>
+                    </div>
+                </div>
+                <div class="card-body-custom">
+                    <!-- Table Container -->
+                    <div class="table-container">
+                        <table class="subscriptions-table">
+                            <thead>
+                                <tr>
+                                    <th>Institution Name</th>
+                                    <th>Contact Person</th>
+                                    <th>Request Date</th>
+                                    <th>Plan Requested</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptionsTableBody">
+                                {% if subscription_requests %}
+                                    {% for request in subscription_requests %}
+                                        <tr data-request-id="{{ request.subscription_id }}" 
+                                            data-institution-id="{{ request.institution_id }}">
+                                            <td>
+                                                <div class="institution-info">
+                                                    <div class="institution-avatar">{{ request.initials if request.initials else request.name[:2].upper() }}</div>
+                                                    <div class="institution-details">
+                                                        <div class="institution-name">{{ request.name }}</div>
+                                                        <div class="institution-location">{{ request.location }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="contact-info">
+                                                    <div class="contact-name">{{ request.contact_person }}</div>
+                                                    <div class="contact-email">{{ request.contact_email }}</div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if request.request_date %}
+                                                    {{ request.request_date.strftime('%b %d, %Y') if request.request_date is string else request.request_date }}
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="plan-badge {{ request.plan|lower if request.plan else 'none' }}">
+                                                    {{ request.plan|title if request.plan else 'No Plan' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge pending">Pending</span>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn-action btn-review" 
+                                                            title="Review Request"
+                                                            onclick="reviewRequest('{{ request.subscription_id }}', '{{ request.name }}')">
+                                                        <span class="action-icon">📄</span>
+                                                    </button>
+                                                    <button class="btn-action btn-approve" 
+                                                            title="Approve Request"
+                                                            onclick="processSubscriptionRequest('{{ request.subscription_id }}', 'approve', '{{ request.name }}')">
+                                                        <span class="action-icon">✓</span>
+                                                    </button>
+                                                    <button class="btn-action btn-reject" 
+                                                            title="Reject Request"
+                                                            onclick="processSubscriptionRequest('{{ request.subscription_id }}', 'reject', '{{ request.name }}')">
+                                                        <span class="action-icon">✗</span>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            No pending subscription requests.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination for Requests -->
+                    <div class="pagination-section">
+                        <div class="pagination-info">
+                            Showing 1-{{ subscription_requests|length if subscription_requests else 0 }} of {{ subscription_requests|length if subscription_requests else 0 }} pending requests
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="btn-custom btn-outline-custom btn-prev" disabled>Previous</button>
+                            <span class="page-numbers">
+                                <span class="page-current">1</span>
+                            </span>
+                            <button class="btn-custom btn-outline-custom btn-next" disabled>Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const statusFilter = document.getElementById('statusFilter');
+        const planFilter = document.getElementById('planFilter');
+        const resetFilters = document.getElementById('resetFilters');
+
+        function applyFilters() {
+            const searchTerm = searchInput.value.trim();
+            const statusValue = statusFilter.value;
+            const planValue = planFilter.value;
+            
+            // Build URL with filters
+            let url = new URL(window.location.href);
+            let params = new URLSearchParams(url.search);
+            
+            if (searchTerm) {
+                params.set('search', searchTerm);
+            } else {
+                params.delete('search');
+            }
+            
+            if (statusValue) {
+                params.set('status', statusValue);
+            } else {
+                params.delete('status');
+            }
+            
+            if (planValue) {
+                params.set('plan', planValue);
+            } else {
+                params.delete('plan');
+            }
+            
+            // Reset to page 1 when filtering
+            params.set('page', '1');
+            
+            // Navigate to filtered page
+            window.location.href = url.pathname + '?' + params.toString();
+        }
+
+        // Search button click
+        searchButton.addEventListener('click', applyFilters);
+        
+        // Search input enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+
+        // Filter change
+        statusFilter.addEventListener('change', applyFilters);
+        planFilter.addEventListener('change', applyFilters);
+
+        // Reset filters
+        resetFilters.addEventListener('click', function() {
+            window.location.href = "{{ url_for('platform.subscription_management') }}";
+        });
+
         // Create Institution Button
         const createInstitutionBtn = document.getElementById('createInstitutionBtn');
         createInstitutionBtn.addEventListener('click', function() {
@@ -1202,12 +1096,12 @@
                     <div class="modal-body">
                         <form id="createInstitutionForm">
                             <div class="form-group">
-                                <label for="institutionName">Institution Name</label>
+                                <label for="institutionName">Institution Name *</label>
                                 <input type="text" id="institutionName" placeholder="Enter institution name" required>
                             </div>
                             <div class="form-group">
                                 <label for="institutionLocation">Location</label>
-                                <input type="text" id="institutionLocation" placeholder="Enter city, country" required>
+                                <input type="text" id="institutionLocation" placeholder="Enter city, country">
                             </div>
                             <div class="form-group">
                                 <label for="institutionPlan">Subscription Plan</label>
@@ -1220,18 +1114,30 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="contactName">Contact Person</label>
+                                <label for="institutionStatus">Status</label>
+                                <select id="institutionStatus">
+                                    <option value="active">Active</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactName">Contact Person *</label>
                                 <input type="text" id="contactName" placeholder="Enter contact name" required>
                             </div>
                             <div class="form-group">
-                                <label for="contactEmail">Contact Email</label>
+                                <label for="contactEmail">Contact Email *</label>
                                 <input type="email" id="contactEmail" placeholder="Enter contact email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactPhone">Contact Phone</label>
+                                <input type="tel" id="contactPhone" placeholder="Enter contact phone">
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-custom btn-outline-custom btn-cancel">Cancel</button>
-                        <button class="btn-custom btn-submit" type="submit" form="createInstitutionForm">Create Institution</button>
+                        <button type="button" class="btn-custom btn-outline-custom btn-cancel">Cancel</button>
+                        <button class="btn-custom btn-submit" type="button" id="submitInstitutionForm">Create Institution</button>
                     </div>
                 </div>
             `;
@@ -1250,13 +1156,45 @@
             });
             
             // Form submission
-            modal.querySelector('#createInstitutionForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const name = document.getElementById('institutionName').value;
-                const plan = document.getElementById('institutionPlan').value;
+            modal.querySelector('#submitInstitutionForm').addEventListener('click', function() {
+                const form = modal.querySelector('#createInstitutionForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
                 
-                showAlert(`Institution profile for ${name} (${plan} plan) has been created successfully.`, 'success');
-                closeModal();
+                const institutionData = {
+                    name: document.getElementById('institutionName').value,
+                    location: document.getElementById('institutionLocation').value,
+                    contact_name: document.getElementById('contactName').value,
+                    contact_email: document.getElementById('contactEmail').value,
+                    contact_phone: document.getElementById('contactPhone').value,
+                    plan: document.getElementById('institutionPlan').value,
+                    status: document.getElementById('institutionStatus').value
+                };
+                
+                // Send API request
+                fetch('/api/institutions/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(institutionData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(`Institution "${institutionData.name}" created successfully!`, 'success');
+                        closeModal();
+                        // Reload page to show new institution
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        showAlert(`Error: ${data.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showAlert(`Error creating institution: ${error.message}`, 'error');
+                });
             });
         });
 
@@ -1277,293 +1215,187 @@
                 showAlert('Showing all pending subscription requests.', 'info');
             }
         });
-
-        // Search functionality
-        const searchInput = document.querySelector('.search-input');
-        const searchButton = document.querySelector('.btn-search');
-        const institutionRows = document.querySelectorAll('.institutions-table tbody tr');
-        const subscriptionRows = document.querySelectorAll('.subscriptions-table tbody tr');
-
-        function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            
-            // Search in institution table
-            institutionRows.forEach(row => {
-                const rowText = row.textContent.toLowerCase();
-                if (searchTerm === '' || rowText.includes(searchTerm)) {
-                    row.style.display = 'table-row';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            // Search in subscription table
-            subscriptionRows.forEach(row => {
-                const rowText = row.textContent.toLowerCase();
-                if (searchTerm === '' || rowText.includes(searchTerm)) {
-                    row.style.display = 'table-row';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            updateCounts();
-        }
-
-        searchButton.addEventListener('click', performSearch);
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-
-        // Filter functionality
-        const statusFilter = document.querySelectorAll('.filter-select')[0];
-        const planFilter = document.querySelectorAll('.filter-select')[1];
-        const resetButton = document.querySelector('.btn-reset');
-
-        function applyFilters() {
-            const statusValue = statusFilter.value;
-            const planValue = planFilter.value;
-            
-            // Filter institution table
-            institutionRows.forEach(row => {
-                const statusBadge = row.querySelector('.status-badge');
-                const planBadge = row.querySelector('.plan-badge');
-                
-                let showRow = true;
-                
-                // Filter by status
-                if (statusValue && statusBadge) {
-                    const rowStatus = statusBadge.classList.contains('active') ? 'active' :
-                                    statusBadge.classList.contains('suspended') ? 'suspended' :
-                                    statusBadge.classList.contains('pending') ? 'pending' :
-                                    statusBadge.classList.contains('expired') ? 'expired' : '';
-                    
-                    if (statusValue !== rowStatus) {
-                        showRow = false;
-                    }
-                }
-                
-                // Filter by plan
-                if (showRow && planValue && planBadge) {
-                    const rowPlan = planBadge.classList.contains('starter') ? 'starter' :
-                                  planBadge.classList.contains('pro') ? 'pro' :
-                                  planBadge.classList.contains('enterprise') ? 'enterprise' :
-                                  planBadge.classList.contains('custom') ? 'custom' : '';
-                    
-                    if (planValue !== rowPlan) {
-                        showRow = false;
-                    }
-                }
-                
-                row.style.display = showRow ? 'table-row' : 'none';
-            });
-            
-            updateCounts();
-        }
-
-        statusFilter.addEventListener('change', applyFilters);
-        planFilter.addEventListener('change', applyFilters);
-
-        resetButton.addEventListener('click', function() {
-            searchInput.value = '';
-            statusFilter.value = '';
-            planFilter.value = '';
-            
-            institutionRows.forEach(row => {
-                row.style.display = 'table-row';
-            });
-            
-            subscriptionRows.forEach(row => {
-                row.style.display = 'table-row';
-            });
-            
-            updateCounts();
-        });
-
-        // Update counts
-        function updateCounts() {
-            const visibleInstitutions = Array.from(institutionRows).filter(row => 
-                row.style.display !== 'none'
-            ).length;
-            
-            const visibleSubscriptions = Array.from(subscriptionRows).filter(row => 
-                row.style.display !== 'none'
-            ).length;
-            
-            const institutionCount = document.querySelector('.institution-count');
-            if (institutionCount) {
-                institutionCount.textContent = `${visibleInstitutions} institutions`;
-            }
-            
-            const requestCount = document.querySelector('.request-count');
-            if (requestCount) {
-                requestCount.textContent = `${visibleSubscriptions} pending requests`;
-            }
-            
-            // Update pagination info
-            const paginationInfo = document.querySelector('.pagination-info');
-            if (paginationInfo) {
-                paginationInfo.textContent = `Showing 1-${Math.min(5, visibleInstitutions)} of ${visibleInstitutions} institutions`;
-            }
-        }
-
-        // Action buttons functionality
-        document.querySelectorAll('.btn-view').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const institutionName = row.querySelector('.institution-name')?.textContent;
-                
-                if (institutionName) {
-                    showAlert(`Viewing details for ${institutionName}`, 'info');
-                }
-            });
-        });
-
-        document.querySelectorAll('.btn-edit').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const institutionName = row.querySelector('.institution-name')?.textContent;
-                
-                if (institutionName) {
-                    showAlert(`Opening edit form for ${institutionName}`, 'warning');
-                }
-            });
-        });
-
-        document.querySelectorAll('.btn-activate').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const institutionName = row.querySelector('.institution-name')?.textContent;
-                const statusBadge = row.querySelector('.status-badge');
-                
-                if (institutionName && confirm(`Activate subscription for ${institutionName}?`)) {
-                    statusBadge.className = 'status-badge active';
-                    statusBadge.textContent = 'Active';
-                    this.innerHTML = '<span class="action-icon">⏸️</span>';
-                    this.title = 'Suspend Subscription';
-                    this.classList.remove('btn-activate');
-                    this.classList.add('btn-suspend');
-                    
-                    showAlert(`Subscription for ${institutionName} has been activated.`, 'success');
-                }
-            });
-        });
-
-        document.querySelectorAll('.btn-suspend').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const institutionName = row.querySelector('.institution-name')?.textContent;
-                const statusBadge = row.querySelector('.status-badge');
-                
-                if (institutionName && confirm(`Suspend subscription for ${institutionName}?`)) {
-                    statusBadge.className = 'status-badge suspended';
-                    statusBadge.textContent = 'Suspended';
-                    this.innerHTML = '<span class="action-icon">✅</span>';
-                    this.title = 'Activate Subscription';
-                    this.classList.remove('btn-suspend');
-                    this.classList.add('btn-activate');
-                    
-                    showAlert(`Subscription for ${institutionName} has been suspended.`, 'warning');
-                }
-            });
-        });
-
-        document.querySelectorAll('.btn-approve').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const institutionName = row.querySelector('.institution-name')?.textContent;
-                const statusBadge = row.querySelector('.status-badge');
-                
-                if (institutionName && confirm(`Approve subscription request for ${institutionName}?`)) {
-                    statusBadge.className = 'status-badge active';
-                    statusBadge.textContent = 'Active';
-                    this.closest('tr').style.opacity = '0.5';
-                    
-                    setTimeout(() => {
-                        row.remove();
-                        updateCounts();
-                    }, 500);
-                    
-                    showAlert(`Subscription for ${institutionName} has been approved.`, 'success');
-                }
-            });
-        });
-
-        document.querySelectorAll('.btn-reject').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const institutionName = row.querySelector('.institution-name')?.textContent;
-                
-                if (institutionName && confirm(`Reject subscription request for ${institutionName}?`)) {
-                    this.closest('tr').style.opacity = '0.5';
-                    
-                    setTimeout(() => {
-                        row.remove();
-                        updateCounts();
-                    }, 500);
-                    
-                    showAlert(`Subscription request for ${institutionName} has been rejected.`, 'error');
-                }
-            });
-        });
-
-        // Pagination functionality
-        document.querySelectorAll('.btn-next').forEach(button => {
-            if (!button.disabled) {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showAlert('Loading next page...', 'info');
-                });
-            }
-        });
-
-        document.querySelectorAll('.page-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const pageNum = this.textContent;
-                showAlert(`Loading page ${pageNum}...`, 'info');
-            });
-        });
-
-        // Show alert message
-        function showAlert(message, type) {
-            // Create alert element
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert-custom alert-${type} mt-3`;
-            alertDiv.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" onclick="this.parentElement.style.display='none'" style="float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer;">×</button>
-            `;
-            
-            // Find alert container or create one
-            let alertContainer = document.querySelector('.alert-container');
-            if (!alertContainer) {
-                alertContainer = document.createElement('div');
-                alertContainer.className = 'alert-container';
-                document.querySelector('.main-container').insertBefore(alertContainer, document.querySelector('.main-container').firstChild);
-            }
-            
-            // Add alert to container
-            alertContainer.appendChild(alertDiv);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (alertDiv.parentElement) {
-                    alertDiv.style.opacity = '0';
-                    alertDiv.style.transition = 'opacity 0.5s';
-                    setTimeout(() => {
-                        if (alertDiv.parentElement) {
-                            alertDiv.parentElement.removeChild(alertDiv);
-                        }
-                    }, 500);
-                }
-            }, 5000);
-        }
-
-        // Initialize
-        updateCounts();
     });
+
+    // JavaScript functions for actions
+    function viewInstitutionDetails(institutionId) {
+        fetch(`/api/institutions/${institutionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Create modal to show details
+                    const modal = document.createElement('div');
+                    modal.className = 'modal-overlay';
+                    modal.innerHTML = `
+                        <div class="modal-content" style="max-width: 700px;">
+                            <div class="modal-header">
+                                <h3>Institution Details</h3>
+                                <button class="modal-close">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="institution-details-view">
+                                    <div class="detail-section">
+                                        <h4>Institution Information</h4>
+                                        <p><strong>Name:</strong> ${data.institution.name}</p>
+                                        <p><strong>Location:</strong> ${data.institution.address}</p>
+                                        <p><strong>Contact Person:</strong> ${data.institution.poc_name}</p>
+                                        <p><strong>Contact Email:</strong> ${data.institution.poc_email}</p>
+                                        <p><strong>Contact Phone:</strong> ${data.institution.poc_phone}</p>
+                                    </div>
+                                    ${data.subscription ? `
+                                    <div class="detail-section">
+                                        <h4>Subscription Information</h4>
+                                        <p><strong>Plan:</strong> ${data.plan ? data.plan.name : 'None'}</p>
+                                        <p><strong>Status:</strong> <span class="status-badge ${data.subscription.status}">${data.subscription.status}</span></p>
+                                        <p><strong>Start Date:</strong> ${new Date(data.subscription.start_date).toLocaleDateString()}</p>
+                                        <p><strong>End Date:</strong> ${new Date(data.subscription.end_date).toLocaleDateString()}</p>
+                                        <p><strong>Active:</strong> ${data.subscription.is_active ? 'Yes' : 'No'}</p>
+                                    </div>
+                                    ` : ''}
+                                    ${data.admin_users.length > 0 ? `
+                                    <div class="detail-section">
+                                        <h4>Admin Users</h4>
+                                        ${data.admin_users.map(user => `
+                                            <div class="admin-user">
+                                                <p><strong>Name:</strong> ${user.name}</p>
+                                                <p><strong>Email:</strong> ${user.email}</p>
+                                                <p><strong>Status:</strong> ${user.is_active ? 'Active' : 'Inactive'}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn-custom btn-outline-custom btn-cancel">Close</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    const closeModal = () => {
+                        document.body.removeChild(modal);
+                    };
+                    
+                    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+                    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === modal) closeModal();
+                    });
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert(`Error fetching institution details: ${error.message}`, 'error');
+            });
+    }
+
+    function editInstitution(institutionId) {
+        showAlert(`Edit institution ${institutionId} - Feature coming soon`, 'info');
+    }
+
+    function updateSubscriptionStatus(subscriptionId, newStatus, institutionName) {
+        if (confirm(`Are you sure you want to ${newStatus} subscription for "${institutionName}"?`)) {
+            fetch(`/api/subscriptions/${subscriptionId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(`Subscription for "${institutionName}" has been ${newStatus}.`, 'success');
+                    // Reload page to reflect changes
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert(`Error updating subscription: ${error.message}`, 'error');
+            });
+        }
+    }
+
+    function processSubscriptionRequest(requestId, action, institutionName) {
+        const actionText = action === 'approve' ? 'approve' : 'reject';
+        if (confirm(`Are you sure you want to ${actionText} subscription request for "${institutionName}"?`)) {
+            fetch(`/api/subscription-requests/${requestId}/process`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const message = action === 'approve' 
+                        ? `Subscription for "${institutionName}" has been approved.` 
+                        : `Subscription request for "${institutionName}" has been rejected.`;
+                    showAlert(message, action === 'approve' ? 'success' : 'warning');
+                    // Reload page to reflect changes
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                showAlert(`Error processing request: ${error.message}`, 'error');
+            });
+        }
+    }
+
+    function reviewRequest(requestId, institutionName) {
+        showAlert(`Reviewing request for "${institutionName}" - Feature coming soon`, 'info');
+    }
+
+    // Show alert message
+    function showAlert(message, type) {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert-custom alert-${type} mt-3`;
+        alertDiv.style.cssText = `
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.375rem;
+            color: ${type === 'error' ? '#dc2626' : type === 'warning' ? '#92400e' : type === 'success' ? '#065f46' : '#075985'};
+            background-color: ${type === 'error' ? '#fef2f2' : type === 'warning' ? '#fef3c7' : type === 'success' ? '#d1fae5' : '#e0f2fe'};
+            border: 1px solid ${type === 'error' ? '#dc2626' : type === 'warning' ? '#f59e0b' : type === 'success' ? '#10b981' : '#0ea5e9'};
+        `;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.style.display='none'" style="float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit;">×</button>
+        `;
+        
+        // Find alert container or create one
+        let alertContainer = document.querySelector('.alert-container');
+        if (!alertContainer) {
+            alertContainer = document.createElement('div');
+            alertContainer.className = 'alert-container';
+            alertContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px;';
+            document.querySelector('.platform-manager-subscription-management').insertBefore(alertContainer, document.querySelector('.platform-manager-subscription-management').firstChild);
+        }
+        
+        // Add alert to container
+        alertContainer.appendChild(alertDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentElement) {
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transition = 'opacity 0.5s';
+                setTimeout(() => {
+                    if (alertDiv.parentElement) {
+                        alertDiv.parentElement.removeChild(alertDiv);
+                    }
+                }, 500);
+            }
+        }, 5000);
+    }
 </script>
 {% endblock %}

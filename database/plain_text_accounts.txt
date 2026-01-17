@@ -4,7 +4,7 @@ Institution Admin: admin@university.edu / password
 
 Lecturer: prof.smith@university.edu / password
 
-Student: student1@university.edu / password
+Student: alice.wong@utech.edu / password
 
 Payment Info:   4242424242424242
                 Any future date

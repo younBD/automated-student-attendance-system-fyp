@@ -3,127 +3,6 @@
 {% block title %}Platform Manager Dashboard - AttendAI{% endblock %}
 
 {% block content %}
-<div class="platform-manager-dashboard">
-    <h1 class="page-title mb-4">Platform Manager Dashboard</h1>
-
-    <div class="dashboard-grid">
-        <!-- Left Column -->
-        <div class="left-column">
-            <!-- Platform Overview Card -->
-            <div class="card-custom mb-4">
-                <div class="card-header-custom">Platform Overview</div>
-                <div class="card-body-custom">
-                    <div class="stats-box">
-                        <div class="stat-row mb-2">
-                            <span class="stat-label">Total Subscriptions:</span>
-                            <span class="stat-value">{{ total_subscription_count or '—' }}</span>
-                        </div>
-                        <div class="stat-row mb-2">
-                            <span class="stat-label">Active Subscriptions:</span>
-                            <span class="stat-value">{{ active_subscription_count or '—' }}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Total Registered Users:</span>
-                            <span class="stat-value">{{ total_user_count or '—' }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions Card -->
-            <div class="card-custom">
-                <div class="card-header-custom">Quick Actions</div>
-                <div class="card-body-custom">
-                    <div class="quick-actions">
-                        <a href="{{ url_for('platform.pending_registrations') }}" class="btn-custom action-btn text-center mb-2">View Subscription Requests</a>
-                        <a href="{{ url_for('platform.subscription_profile_creator') }}" class="btn-custom action-btn text-center mb-2">Create Subscription / Institution Profile</a>
-                        <a href="{{ url_for('platform.user_management') }}" class="btn-custom action-btn text-center mb-2">Manage Admin Accounts</a>
-                        <a href="{{ url_for('platform.user_management') }}" class="btn-custom action-btn text-center mb-2">View User Profiles</a>
-                        <a href="{{ url_for('platform.settings_management') }}" class="btn-custom action-btn text-center">Open System Settings</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Middle Column -->
-        <div class="card-custom">
-            <div class="card-header-custom">Subscription & Institution Status</div>
-            <div class="card-body-custom">
-                <div class="column-section mb-4">
-                    <h3 class="section-title mb-3">Recent Subscriptions</h3>
-                    {% if recent_subscriptions %}
-                        {% for sub in recent_subscriptions %}
-                            <div class="list-item mb-2">
-                                <div class="list-item-content">
-                                    <span class="list-item-text">{{ sub.institution_name }}</span>
-                                    <span class="list-item-text">{{ sub.request_date.strftime('%Y-%m-%d') }}</span>
-                                </div>
-                                <a href="{{ url_for('platform.pending_registrations') }}#req-{{ sub.id }}" class="btn-custom more-btn">More</a>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="list-item">
-                            <div class="list-item-content">
-                                <span class="list-item-text">No recent subscriptions</span>
-                            </div>
-                        </div>
-                    {% endif %}
-                <div class="column-section">
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column -->
-        <div class="card-custom">
-            <div class="card-header-custom">System & Reports Snapshot</div>
-            <div class="card-body-custom">
-                <div class="column-section mb-4">
-                    <h3 class="section-title mb-3">System Performance</h3>
-                    <div class="performance-box">
-                        <div class="status-row mb-2">
-                            <span class="stat-label">Overall Status:</span>
-                            <span class="checkmark">✓</span>
-                            <span class="status-normal">Normal</span>
-                        </div>
-                        <div class="stat-row mb-2">
-                            <span class="stat-label">Average Response Time:</span>
-                            <span class="stat-value"> xx ms</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Last Incident:</span>
-                            <span class="stat-value"> None in last 24h</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="column-section">
-                    <h3 class="section-title mb-3">Recent User Reports</h3>
-                    {% if recent_reports %}
-                        {% for report in recent_reports %}
-                            <div class="report-card mb-3">
-                                <div class="report-header mb-2">
-                                    <span class="report-info">Case ID: {{ report.case_id }}</span>
-                                    <span class="report-info">Institution: {{ report.institution }}</span>
-                                    <span class="report-info">Date: {{ report.date }}</span>
-                                </div>
-                                <div class="report-footer">
-                                    <span class="report-info">Type: {{ report.type }}</span>
-                                    <a href="{{ url_for('platform.report_details', report_id=report.id) }}" class="btn-outline-custom view-details-btn">View Details</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="report-card">
-                            <div class="report-header mb-2">
-                                <span class="report-info">No recent reports</span>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     /* Platform Manager Dashboard Specific Styles */
@@ -359,4 +238,126 @@
         }
     }
 </style>
+
+<div class="platform-manager-dashboard">
+    <h1 class="page-title mb-4">Platform Manager Dashboard</h1>
+
+    <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+            <!-- Platform Overview Card -->
+            <div class="card-custom mb-4">
+                <div class="card-header-custom">Platform Overview</div>
+                <div class="card-body-custom">
+                    <div class="stats-box">
+                        <div class="stat-row mb-2">
+                            <span class="stat-label">Total Subscriptions:</span>
+                            <span class="stat-value">{{ total_subscription_count or '—' }}</span>
+                        </div>
+                        <div class="stat-row mb-2">
+                            <span class="stat-label">Active Subscriptions:</span>
+                            <span class="stat-value">{{ active_subscription_count or '—' }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Registered Users:</span>
+                            <span class="stat-value">{{ total_user_count or '—' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card-custom">
+                <div class="card-header-custom">Quick Actions</div>
+                <div class="card-body-custom">
+                    <div class="quick-actions">
+                        <a href="{{ url_for('platform.pending_registrations') }}" class="btn-custom action-btn text-center mb-2">View Subscription Requests</a>
+                        <a href="{{ url_for('platform.subscription_profile_creator') }}" class="btn-custom action-btn text-center mb-2">Create Subscription / Institution Profile</a>
+                        <a href="{{ url_for('platform.user_management') }}" class="btn-custom action-btn text-center mb-2">Manage Admin Accounts</a>
+                        <a href="{{ url_for('platform.user_management') }}" class="btn-custom action-btn text-center mb-2">View User Profiles</a>
+                        <a href="{{ url_for('platform.settings_management') }}" class="btn-custom action-btn text-center">Open System Settings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Column -->
+        <div class="card-custom">
+            <div class="card-header-custom">Subscription & Institution Status</div>
+            <div class="card-body-custom">
+                <div class="column-section mb-4">
+                    <h3 class="section-title mb-3">Recent Subscriptions</h3>
+                    {% if recent_subscriptions %}
+                        {% for sub in recent_subscriptions %}
+                            <div class="list-item mb-2">
+                                <div class="list-item-content">
+                                    <span class="list-item-text">{{ sub.institution_name }}</span>
+                                    <span class="list-item-text">{{ sub.request_date.strftime('%Y-%m-%d') }}</span>
+                                </div>
+                                <a href="{{ url_for('platform.pending_registrations') }}#req-{{ sub.id }}" class="btn-custom more-btn">More</a>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <span class="list-item-text">No recent subscriptions</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                <div class="column-section">
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="card-custom">
+            <div class="card-header-custom">System & Reports Snapshot</div>
+            <div class="card-body-custom">
+                <div class="column-section mb-4">
+                    <h3 class="section-title mb-3">System Performance</h3>
+                    <div class="performance-box">
+                        <div class="status-row mb-2">
+                            <span class="stat-label">Overall Status:</span>
+                            <span class="checkmark">✓</span>
+                            <span class="status-normal">Normal</span>
+                        </div>
+                        <div class="stat-row mb-2">
+                            <span class="stat-label">Average Response Time:</span>
+                            <span class="stat-value"> xx ms</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Last Incident:</span>
+                            <span class="stat-value"> None in last 24h</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="column-section">
+                    <h3 class="section-title mb-3">Recent User Reports</h3>
+                    {% if recent_reports %}
+                        {% for report in recent_reports %}
+                            <div class="report-card mb-3">
+                                <div class="report-header mb-2">
+                                    <span class="report-info">Case ID: {{ report.case_id }}</span>
+                                    <span class="report-info">Institution: {{ report.institution }}</span>
+                                    <span class="report-info">Date: {{ report.date }}</span>
+                                </div>
+                                <div class="report-footer">
+                                    <span class="report-info">Type: {{ report.type }}</span>
+                                    <a href="{{ url_for('platform.report_details', report_id=report.id) }}" class="btn-outline-custom view-details-btn">View Details</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="report-card">
+                            <div class="report-header mb-2">
+                                <span class="report-info">No recent reports</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

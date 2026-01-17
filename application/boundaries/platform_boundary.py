@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, session, current_app, flash, redirect, url_for
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from application.controls.auth_control import AuthControl, requires_roles
+from application.controls.platform_control import PlatformControl
 from application.entities.base_entity import BaseEntity
 from application.entities2.institution import InstitutionModel
 from application.entities2.subscription import SubscriptionModel
@@ -14,7 +15,7 @@ platform_bp = Blueprint('platform', __name__)
 @platform_bp.route('/')
 @requires_roles('platform_manager')
 def platform_dashboard():
-    """Platform manager dashboard (alias of platform manager)"""
+    """Platform manager dashboard"""
     with get_session() as session:
         inst_model = InstitutionModel(session)
         sub_model = SubscriptionModel(session)
@@ -37,6 +38,7 @@ def platform_dashboard():
 
 
 @platform_bp.route('/pending-registrations')
+@requires_roles('platform_manager')
 def pending_registrations():
     """List pending registration requests for review (platform manager view)"""
     auth_result = AuthControl.verify_session(current_app, session)
@@ -51,10 +53,11 @@ def pending_registrations():
     except Exception:
         rows = []
 
-    return render_template('platmanager/pending_registrations.html', user=auth_result['user'], requests=rows)
+    return render_template('platmanager/platform_manager_subscription_management_pending_registrations.html', user=auth_result['user'], requests=rows)
 
 
 @platform_bp.route('/pending-registrations/approve/<int:unreg_user_id>', methods=['POST'])
+@requires_roles('platform_manager')
 def approve_registration(unreg_user_id):
     auth_result = AuthControl.verify_session(current_app, session)
     if not auth_result['success'] or auth_result['user'].get('user_type') != 'platform_manager':
@@ -115,18 +118,212 @@ def user_management():
 @requires_roles('platform_manager')
 def subscription_management():
     """Platform manager - subscription management"""
-    return render_template('platmanager/platform_manager_subscription_management.html')
+    PER_PAGE = 5
+    page = int(request.args.get('page', 1))
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', '')
+    plan_filter = request.args.get('plan', '')
+    
+    # Use PlatformControl to get data
+    institutions_result = PlatformControl.get_institutions_with_filters(
+        search=search,
+        status=status_filter,
+        plan=plan_filter,
+        page=page,
+        per_page=PER_PAGE
+    )
+    
+    requests_result = PlatformControl.get_subscription_requests(limit=5)
+    stats_result = PlatformControl.get_subscription_statistics()
+    
+    # Check for errors
+    if not institutions_result['success']:
+        flash(institutions_result.get('error', 'Error loading institutions'), 'danger')
+        institutions = []
+        pagination = {}
+    else:
+        institutions = institutions_result['institutions']
+        pagination = institutions_result['pagination']
+    
+    if not requests_result['success']:
+        flash(requests_result.get('error', 'Error loading subscription requests'), 'danger')
+        subscription_requests = []
+    else:
+        subscription_requests = requests_result['requests']
+    
+    if not stats_result['success']:
+        flash(stats_result.get('error', 'Error loading statistics'), 'danger')
+        stats = {}
+    else:
+        stats = stats_result['statistics']
+    
+    context = {
+        'institutions': institutions,
+        'subscription_requests': subscription_requests,
+        'stats': stats,
+        
+        # Pagination data
+        'current_page': pagination.get('current_page', page),
+        'total_pages': pagination.get('total_pages', 1),
+        'has_prev': pagination.get('has_prev', False),
+        'has_next': pagination.get('has_next', False),
+        'start_idx': pagination.get('start_idx', 0),
+        'end_idx': pagination.get('end_idx', 0),
+        'total_institutions': pagination.get('total_items', 0),
+        
+        # Filter values (for preserving state)
+        'search_term': search,
+        'status_filter': status_filter,
+        'plan_filter': plan_filter,
+        
+        # Statistics
+        'active_institutions': stats.get('active_institutions', 0),
+        'suspended_institutions': stats.get('suspended_institutions', 0),
+        'pending_requests': stats.get('pending_requests', 0),
+        'new_institutions_quarter': stats.get('new_institutions_quarter', 0),
+    }
+    
+    return render_template('platmanager/platform_manager_subscription_management.html', **context)
+
+@platform_bp.route('/api/institutions/create', methods=['POST'])
+@requires_roles('platform_manager')
+def create_institution():
+    """Create a new institution profile"""
+    data = request.json
+    
+    result = PlatformControl.create_institution_profile(data)
+    
+    if result['success']:
+        return jsonify(result)
+    else:
+        return jsonify(result), 400
+        
+@platform_bp.route('/api/subscriptions/<int:subscription_id>/update-status', methods=['POST'])
+@requires_roles('platform_manager')
+def update_subscription_status(subscription_id):
+    """Update subscription status (activate, suspend, etc.)"""
+    data = request.json
+    new_status = data.get('status')
+    
+    # Get reviewer_id from session
+    reviewer_id = session.get('user_id')
+    
+    result = PlatformControl.update_subscription_status(
+        subscription_id=subscription_id,
+        new_status=new_status,
+        reviewer_id=reviewer_id
+    )
+    
+    if result['success']:
+        return jsonify(result)
+    else:
+        return jsonify(result), 400
+        
+@platform_bp.route('/api/subscription-requests/<int:request_id>/process', methods=['POST'])
+@requires_roles('platform_manager')
+def process_subscription_request(request_id):
+    """Approve or reject a subscription request"""
+    data = request.json
+    action = data.get('action')
+    
+    # Get reviewer_id from session
+    reviewer_id = session.get('user_id')
+    
+    result = PlatformControl.process_subscription_request(
+        request_id=request_id,
+        action=action,
+        reviewer_id=reviewer_id
+    )
+    
+    if result['success']:
+        return jsonify(result)
+    else:
+        return jsonify(result), 400
+        
+@platform_bp.route('/api/institutions/search', methods=['GET'])
+@requires_roles('platform_manager')
+def search_institutions():
+    """Search institutions by name, contact, or plan"""
+    search_term = request.args.get('q', '').strip()
+    status = request.args.get('status', '')
+    plan = request.args.get('plan', '')
+    
+    with get_session() as session:
+        inst_model = InstitutionModel(session)
+        
+        # Get filtered institutions
+        institutions = inst_model.search(
+            search_term=search_term,
+            status=status,
+            plan=plan
+        )
+        
+        return jsonify({
+            'success': True,
+            'institutions': institutions,
+            'count': len(institutions)
+        })
 
 
-@platform_bp.route('/subscriptions/profile-creator')
-def subscription_profile_creator():
-    """Platform manager - create/edit subscription profiles"""
-    auth_result = AuthControl.verify_session(current_app, session)
-    if not auth_result['success'] or auth_result['user'].get('user_type') != 'platform_manager':
-        flash('Access denied. Platform manager privileges required.', 'danger')
-        return redirect(url_for('auth.login'))
-    return render_template('platmanager/platform_manager_subscription_management_profile_creator.html', user=auth_result['user'])
-
+@platform_bp.route('/api/subscriptions/stats', methods=['GET'])
+@requires_roles('platform_manager')
+def get_subscription_stats():
+    """Get subscription statistics for dashboard"""
+    with get_session() as session:
+        inst_model = InstitutionModel(session)
+        sub_model = SubscriptionModel(session)
+        
+        # Get counts
+        total_institutions = inst_model.count()
+        active_subscriptions = sub_model.count_by_status('active')
+        suspended_subscriptions = sub_model.count_by_status('suspended')
+        pending_requests = sub_model.count_by_status('pending')
+        
+        # Calculate growth (simplified - would query historical data in real app)
+        # This could be moved to a separate method that queries historical data
+        growth_data = {
+            'total_growth': 3,  # +3 this quarter
+            'active_growth': '+5%',  # +5% growth
+            'suspended_growth': '-1',  # -1 this month
+        }
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_institutions': total_institutions,
+                'active_institutions': active_subscriptions,
+                'suspended_subscriptions': suspended_subscriptions,
+                'pending_requests': pending_requests,
+                'growth': growth_data
+            }
+        })
+    
+@platform_bp.route('/api/institutions/<int:institution_id>', methods=['GET'])
+@requires_roles('platform_manager')
+def get_institution_details(institution_id):
+    """Get institution details"""
+    result = PlatformControl.get_institution_details(institution_id)
+    
+    if result['success']:
+        return jsonify(result)
+    else:
+        return jsonify(result), 404
+    
+@platform_bp.route('/api/institutions/<int:institution_id>/update', methods=['POST'])
+@requires_roles('platform_manager')
+def update_institution(institution_id):
+    """Update institution profile"""
+    data = request.json
+    
+    result = PlatformControl.update_institution_profile(
+        institution_id=institution_id,
+        update_data=data
+    )
+    
+    if result['success']:
+        return jsonify(result)
+    else:
+        return jsonify(result), 400
 
 @platform_bp.route('/reports')
 @requires_roles('platform_manager')

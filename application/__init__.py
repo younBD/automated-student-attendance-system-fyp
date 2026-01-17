@@ -10,7 +10,6 @@ def create_app(app):
     from application.boundaries.student_boundary import student_bp
     from application.boundaries.institution_admin_boundary import institution_bp
     from application.boundaries.lecturer_boundary import lecturer_bp
-    from application.boundaries.admin_boundary import admin_bp
     from application.boundaries.platform_boundary import platform_bp
     # Dev tooling (only for development)
     try:
@@ -27,7 +26,6 @@ def create_app(app):
     app.register_blueprint(student_bp, url_prefix='/student')
     app.register_blueprint(institution_bp, url_prefix='/institution')
     app.register_blueprint(lecturer_bp, url_prefix='/institution/lecturer')
-    app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(platform_bp, url_prefix='/platform')
     if has_dev and dev_bp:
         # Register development endpoints under /dev
