@@ -312,6 +312,50 @@ def seed_appeals():
         session.commit()
         print(f"Created {len(appeals)} appeals.")
 
+def seed_testimonials():
+    with get_session() as session:
+        testimonials = []
+        
+        testimonial_data = [
+            # Institution 1 testimonials
+            (1, 4, "The automated attendance system has revolutionized how we track student participation. It's accurate, fast, and saves us countless hours of manual work.", "Revolutionary attendance tracking", 5, "approved"),
+            (1, 10, "As a student, I appreciate how seamless the facial recognition system is. No more forgetting to sign attendance sheets!", "Seamless and convenient", 5, "approved"),
+            (1, 11, "The system works great most of the time, but occasionally has issues with lighting conditions. Overall, it's a significant improvement over the old system.", "Works great with minor issues", 4, "approved"),
+            (1, 12, "I was skeptical at first, but the attendance system has proven to be reliable and efficient. Highly recommend it!", "Reliable and efficient", 5, "approved"),
+            (1, 13, "Good system, but the mobile app could use some improvements. Desktop version is excellent though.", "Desktop version excellent", 4, "pending"),
+            
+            # Institution 2 testimonials
+            (2, 6, "This platform has streamlined our entire attendance process. The reporting features are particularly impressive.", "Streamlined attendance process", 5, "approved"),
+            (2, 15, "The facial recognition is incredibly accurate. It's made attending classes so much easier and faster.", "Incredibly accurate", 5, "approved"),
+            (2, 16, "A solid system that does what it promises. The interface could be more modern, but functionality is top-notch.", "Solid functionality", 4, "approved"),
+            (2, 17, "I love how I can check my attendance record anytime. The transparency is great!", "Great transparency", 5, "pending"),
+            
+            # Institution 3 testimonials
+            (3, 8, "Implementing this system was one of the best decisions we've made. Student engagement has improved measurably.", "Best decision for engagement", 5, "approved"),
+            (3, 9, "The analytics and reporting capabilities help us identify at-risk students early. Invaluable tool for educators.", "Invaluable analytics tool", 5, "approved"),
+            (3, 18, "Works well overall. Sometimes the system is slow during peak hours, but that's a minor issue.", "Works well with minor delays", 4, "approved"),
+            (3, 19, "The attendance appeals process is straightforward and fair. Makes it easy to handle special circumstances.", "Fair appeals process", 4, "approved"),
+            (3, 20, "Great system! The facial recognition is fast and accurate. Much better than manual attendance.", "Fast and accurate", 5, "pending"),
+        ]
+        
+        users = session.query(User).all()
+        for user in users:
+            testimonial = Testimonial(
+                institution_id=user.institution_id,
+                user_id=user.user_id,
+                content=random.choice(testimonial_data)[2],
+                summary=random.choice(testimonial_data)[3],
+                rating=random.choice(testimonial_data)[4],
+                status=random.choice(testimonial_data)[5],
+            )
+            testimonials.append(testimonial)
+            
+        
+        
+        session.add_all(testimonials)
+        session.commit()
+        print(f"Added {len(testimonials)} testimonials")
+
 def seed_database():
     import random
     zip_dict = lambda keys, list_of_values: [dict(zip(keys, values)) for values in list_of_values]
@@ -420,6 +464,9 @@ def seed_database():
     
     if row_count("Attendance_Appeals") == 0:
         seed_appeals()
+    
+    if row_count("Testimonials") == 0:
+        seed_testimonials()
 
     if row_count("Announcements") == 0:
         cols = [
