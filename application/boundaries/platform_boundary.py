@@ -43,36 +43,65 @@ def pending_registrations():
     """List pending registration requests for review (platform manager view)"""
 
 
-    try:
-        cursor = BaseEntity.get_db_connection(current_app)
-        cursor.execute("SELECT unreg_user_id, email, full_name, institution_name, applied_at, selected_plan_id FROM Unregistered_Users WHERE status = 'pending' ORDER BY applied_at DESC")
-        rows = cursor.fetchall() or []
-    except Exception:
-        rows = []
+    # Use PlatformControl to get pending subscriptions
+    result = PlatformControl.get_pending_subscriptions()
+    
+    if not result['success']:
+        flash(result.get('error', 'Error loading pending registrations'), 'danger')
+        pending_requests = []
+    else:
+        pending_requests = result.get('pending_subscriptions', [])
+    
+    return render_template('platmanager/platform_manager_subscription_management_pending_registrations.html', 
+                         user=auth_result['user'], 
+                         requests=pending_requests)
 
-    return render_template('platmanager/platform_manager_subscription_management_pending_registrations.html', requests=rows)
 
-
-@platform_bp.route('/pending-registrations/approve/<int:unreg_user_id>', methods=['POST'])
+@platform_bp.route('/pending-registrations/approve/<int:subscription_id>', methods=['POST'])
 @requires_roles('platform_manager')
-def approve_registration(unreg_user_id):
+def approve_registration(subscription_id):
+    """Approve a pending registration request"""
     auth_result = AuthControl.verify_session(current_app, session)
     if not auth_result['success'] or auth_result['user'].get('user_type') != 'platform_manager':
         return jsonify({'success': False, 'error': 'Access denied'}), 403
 
-    temp_pw = request.form.get('temp_password')
     reviewer_id = auth_result['user'].get('user_id')
-    result = AuthControl.approve_unregistered_user(current_app, unreg_user_id, reviewer_id=reviewer_id, admin_password=temp_pw)
+    
+    # Use PlatformControl to handle the approval
+    result = PlatformControl.approve_subscription(
+        subscription_id=subscription_id,
+        reviewer_id=reviewer_id
+    )
 
     if result.get('success'):
-        flash('Request approved. Admin account created.', 'success')
-        if result.get('admin_password'):
-            flash('Temporary admin password: ' + result.get('admin_password'), 'info')
+        flash('Registration approved successfully.', 'success')
         return redirect(url_for('platform.pending_registrations'))
 
-    flash(result.get('error') or 'Failed to approve request', 'danger')
+    flash(result.get('error') or 'Failed to approve registration', 'danger')
     return redirect(url_for('platform.pending_registrations'))
 
+@platform_bp.route('/pending-registrations/reject/<int:subscription_id>', methods=['POST'])
+@requires_roles('platform_manager')
+def reject_registration(subscription_id):
+    """Reject a pending registration request"""
+    auth_result = AuthControl.verify_session(current_app, session)
+    if not auth_result['success'] or auth_result['user'].get('user_type') != 'platform_manager':
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    reviewer_id = auth_result['user'].get('user_id')
+    
+    # Use PlatformControl to handle the rejection
+    result = PlatformControl.reject_subscription(
+        subscription_id=subscription_id,
+        reviewer_id=reviewer_id
+    )
+
+    if result.get('success'):
+        flash(f'Registration rejected: {result.get("message", "")}', 'success')
+        return redirect(url_for('platform.pending_registrations'))
+
+    flash(result.get('error') or 'Failed to reject registration', 'danger')
+    return redirect(url_for('platform.pending_registrations'))
 
 @platform_bp.route('/users')
 @requires_roles('platform_manager')

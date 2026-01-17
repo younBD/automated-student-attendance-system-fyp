@@ -1,5 +1,6 @@
 from .base_entity import BaseEntity
 from .announcement import AnnouncementModel
+from .attendance_appeal import AttendanceAppealModel
 from .attendance_record import AttendanceRecordModel
 from .classes import ClassModel
 from .course_user import CourseUserModel
