@@ -111,6 +111,9 @@ class UserModel(BaseEntity[User]):
             return True
         return False
     
-    
-    
-    
+    def get_by_institution_and_role(self, institution_id: int, role: str):
+        """Get users by institution ID and role."""
+        return self.session.query(User).filter(
+            User.institution_id == institution_id,
+            User.role == role
+        ).all()

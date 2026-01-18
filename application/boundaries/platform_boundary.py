@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, session, current_app, flash, redirect, url_for
 from datetime import datetime, timedelta
 
-from application.controls.auth_control import AuthControl, requires_roles
+from application.controls.auth_control import AuthControl, requires_roles, requires_roles_api
 from application.controls.platform_control import PlatformControl
 from application.entities.base_entity import BaseEntity
 from application.entities2.institution import InstitutionModel
@@ -210,7 +210,7 @@ def subscription_management():
     return render_template('platmanager/platform_manager_subscription_management.html', **context)
 
 @platform_bp.route('/api/institutions/create', methods=['POST'])
-@requires_roles('platform_manager')
+@requires_roles_api('platform_manager')
 def create_institution():
     """Create a new institution profile"""
     data = request.json
@@ -223,7 +223,7 @@ def create_institution():
         return jsonify(result), 400
         
 @platform_bp.route('/api/subscriptions/<int:subscription_id>/update-status', methods=['POST'])
-@requires_roles('platform_manager')
+@requires_roles_api('platform_manager')
 def update_subscription_status(subscription_id):
     """Update subscription status (activate, suspend, etc.)"""
     data = request.json
@@ -244,7 +244,7 @@ def update_subscription_status(subscription_id):
         return jsonify(result), 400
         
 @platform_bp.route('/api/subscription-requests/<int:request_id>/process', methods=['POST'])
-@requires_roles('platform_manager')
+@requires_roles_api('platform_manager')
 def process_subscription_request(request_id):
     """Approve or reject a subscription request"""
     data = request.json
@@ -265,7 +265,7 @@ def process_subscription_request(request_id):
         return jsonify(result), 400
         
 @platform_bp.route('/api/institutions/search', methods=['GET'])
-@requires_roles('platform_manager')
+@requires_roles_api('platform_manager')
 def search_institutions():
     """Search institutions by name, contact, or plan"""
     search_term = request.args.get('q', '').strip()
@@ -290,7 +290,7 @@ def search_institutions():
 
 
 @platform_bp.route('/api/subscriptions/stats', methods=['GET'])
-@requires_roles('platform_manager')
+@requires_roles_api('platform_manager')
 def get_subscription_stats():
     """Get subscription statistics for dashboard"""
     with get_session() as session:
@@ -323,7 +323,7 @@ def get_subscription_stats():
         })
     
 @platform_bp.route('/api/institutions/<int:institution_id>', methods=['GET'])
-@requires_roles('platform_manager')
+@requires_roles_api('platform_manager')
 def get_institution_details(institution_id):
     """Get institution details"""
     result = PlatformControl.get_institution_details(institution_id)
@@ -334,7 +334,6 @@ def get_institution_details(institution_id):
         return jsonify(result), 404
     
 @platform_bp.route('/api/institutions/<int:institution_id>/update', methods=['POST'])
-@requires_roles('platform_manager')
 def update_institution(institution_id):
     """Update institution profile"""
     data = request.json
@@ -386,3 +385,12 @@ def settings_management():
 def subscription_profile_creator():
     """Subscription profile creation page"""
     return render_template('platmanager/platform_manager_subscription_management_profile_creator.html')
+
+@platform_bp.route('/api/debug-session', methods=['GET'])
+def debug_session():
+    return jsonify({
+        'session': dict(session),
+        'user_role': session.get('role'),
+        'user_type': session.get('user_type'),
+        'user_id': session.get('user_id')
+    })

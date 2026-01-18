@@ -270,7 +270,7 @@ class PlatformControl:
                     'subscription_id': subscription_id,
                     'new_status': new_status,
                     'is_active': (new_status == 'active')  # For backward compatibility
-            }
+                }
             
         except Exception as e:
             if 'db_session' in locals():
@@ -384,7 +384,6 @@ class PlatformControl:
                     'subscription': institution_data['subscription'],
                     'plan': institution_data['plan'],
                     'admin_users': [user.as_sanitized_dict() for user in admin_users] if admin_users else [],
-                    'subscription_status': subscription.status if subscription else 'none',
                     'is_active': subscription.is_active if subscription else False
                 }
                 
@@ -738,16 +737,12 @@ class PlatformControl:
                     status = 'approved'
                     status_message = 'Registration approved and active'
                 else:
-                    # Check if it's pending or rejected
-                    # We'll treat inactive subscriptions without an end date as pending
                     if subscription['end_date'] is None:
-                        status = 'pending'
-                        status_message = 'Registration pending approval'
-                    else:
-                        # If it has an end date but is inactive, it might be suspended or rejected
-                        # For simplicity, we'll call it 'inactive'
                         status = 'inactive'
                         status_message = 'Registration not active'
+                    else:
+                        status = 'pending'
+                        status_message = 'Registration pending approval'
             
                 return {
                     'success': True,
