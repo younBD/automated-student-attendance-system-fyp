@@ -267,37 +267,12 @@ class ReportSchedule(Base, BaseMixin):
 # ====================
 class Testimonial(Base, BaseMixin):
     __tablename__ = "testimonials"
-    __table_args__ = (
-        UniqueConstraint("institution_id", "user_id", name="uq_testimonial_institution_user"),
-    )
-    
     testimonial_id = Column(Integer, primary_key=True)
-    institution_id = Column(Integer, ForeignKey("institutions.institution_id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
-    
-    title = Column(String(200), nullable=False)
-    description = Column(Text, nullable=False)
-    rating = Column(Integer, nullable=False, default=5)  # 1 to 5
-    status = Column(TestimonialStatusEnum, server_default="pending")  # Moderation status
+    institution_id = Column(Integer, ForeignKey("institutions.institution_id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
+
+    content = Column(Text, nullable=False)
+    summary = Column(String(255))
+    rating = Column(Integer, nullable=False)
+    status = Column(TestimonialStatusEnum, nullable=False, server_default="pending")
     date_submitted = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
-    
-    # Optional: Index for frequently filtered columns
-    __table_args__ = (
-        UniqueConstraint("institution_id", "user_id", name="uq_testimonial_institution_user"),
-        Index("idx_testimonial_status", "status"),
-        Index("idx_testimonial_institution_status", "institution_id", "status"),
-        # CheckConstraint('rating >= 1 AND rating <= 5', name='rating_range_check')
-    )
-    
-    # Relationships
-    institution = relationship("Institution")
-    user = relationship("User")
-    
-    # Validation method
-    def validate_rating(self):
-        if not 1 <= self.rating <= 5:
-            raise ValueError("Rating must be between 1 and 5")
-    
-    # Helper method to check if testimonial is visible (approved)
-    def is_visible(self):
-        return self.status == "approved"

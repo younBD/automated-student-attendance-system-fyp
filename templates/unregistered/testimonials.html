@@ -365,26 +365,7 @@
 
 <!-- Testimonials Grid -->
 <div class="testimonials-grid">
-    {% for testimonial in testimonials %}
-    <a href="{{ url_for('main.testimonial_detail', testimonial_id=testimonial.testimonial_id if testimonial.testimonial_id else loop.index) }}" 
-       class="testimonial-card card-custom">
-        <div class="testimonial-quote">"</div>
-        <div class="testimonial-rating">
-            {% for i in range(testimonial.rating) %}
-            <span class="star">★</span>
-            {% endfor %}
-        </div>
-        <div class="testimonial-content">
-            <p class="testimonial-text">"{{ testimonial.description }}"</p>
-            <div class="testimonial-author">
-                <div class="author-name">{{ testimonial.display_name or testimonial.user_name }}</div>
-                <div class="author-role">{{ testimonial.author_role or 'User' }}</div>
-                <div class="author-organization">{{ testimonial.author_organization or 'Educational Institution' }}</div>
-            </div>
-            <span class="read-more-btn">Read Full Story →</span>
-        </div>
-    </a>
-    {% endfor %}
+    
 </div>
 
 <!-- Stats Section -->
