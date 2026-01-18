@@ -9,9 +9,9 @@
         <div class="header-content">
             <h1 class="welcome-title">Attendance Statistics</h1>
             <div class="datetime-display">
-                <span class="time">07:48AM</span>
+                <span class="time">{{ current_time }}</span>
                 <span class="separator">|</span>
-                <span class="date">25 November 2025</span>
+                <span class="date">{{ current_date }}</span>
             </div>
         </div>
         <div class="notification-bell">
@@ -26,24 +26,38 @@
         <div class="card-body-custom">
             <!-- Controls Row -->
             <div class="controls-row mb-4">
-                <div class="dropdown-control">
+                <div class="dropdown-control" id="courseDropdown" style="position: relative;">
                     <div class="dropdown-content">
-                        <div class="dropdown-title">CSCI251</div>
-                        <div class="dropdown-subtitle">Advanced Programming</div>
+                        <div class="dropdown-title">{{ selected_course.code }}</div>
+                        <div class="dropdown-subtitle">{{ selected_course.name }}</div>
                     </div>
                     <span class="dropdown-arrow">▼</span>
+                    {% if courses|length > 1 %}
+                    <div class="dropdown-menu" id="courseDropdownMenu" style="display: none;">
+                        {% for course in courses %}
+                        <a href="?course_id={{ course.course_id }}&period={{ time_period }}" 
+                           class="dropdown-menu-item {% if selected_course.course_id == course.course_id %}active{% endif %}">
+                            <div class="dropdown-menu-title">{{ course.code }}</div>
+                            <div class="dropdown-menu-subtitle">{{ course.name }}</div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="time-toggle">
-                    <button class="time-btn">Week</button>
-                    <button class="time-btn active">Month</button>
-                    <button class="time-btn">Semester</button>
+                    <a href="?period=week{% if selected_course.course_id %}&course_id={{ selected_course.course_id }}{% endif %}" 
+                       class="time-btn {% if time_period == 'week' %}active{% endif %}">Week</a>
+                    <a href="?period=month{% if selected_course.course_id %}&course_id={{ selected_course.course_id }}{% endif %}" 
+                       class="time-btn {% if time_period == 'month' %}active{% endif %}">Month</a>
+                    <a href="?period=semester{% if selected_course.course_id %}&course_id={{ selected_course.course_id }}{% endif %}" 
+                       class="time-btn {% if time_period == 'semester' %}active{% endif %}">Semester</a>
                 </div>
 
                 <div class="dropdown-control">
                     <div class="dropdown-content">
-                        <div class="dropdown-title">T01</div>
-                        <div class="dropdown-subtitle">Tutorial Group 01</div>
+                        <div class="dropdown-title">{{ tutorial_group }}</div>
+                        <div class="dropdown-subtitle">Tutorial Group</div>
                     </div>
                     <span class="dropdown-arrow">▼</span>
                 </div>
@@ -73,39 +87,14 @@
                             </div>
                         </div>
 
-                        <div class="chart-line">
-                            <!-- Data points at approximately 90%, 88%, 87%, 91%, 89% -->
-                            <div class="data-point" style="left: 0%; top: 10%;"></div>
-                            <div class="data-point" style="left: 25%; top: 12%;"></div>
-                            <div class="data-point" style="left: 50%; top: 13%;"></div>
-                            <div class="data-point" style="left: 75%; top: 9%;"></div>
-                            <div class="data-point" style="left: 100%; top: 11%;"></div>
-
-                            <!-- Connecting lines -->
-                            <svg style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
-                                <polyline 
-                                    points="0,10% 25%,12% 50%,13% 75%,9% 100%,11%" 
-                                    fill="none" 
-                                    stroke="#4285f4" 
-                                    stroke-width="2"
-                                    vector-effect="non-scaling-stroke" />
-                                <polyline 
-                                    points="0,15% 25%,15% 50%,15% 75%,15% 100%,15%" 
-                                    fill="none" 
-                                    stroke="#4285f4" 
-                                    stroke-width="2"
-                                    stroke-dasharray="5,5"
-                                    opacity="0.5"
-                                    vector-effect="non-scaling-stroke" />
-                            </svg>
+                        <div class="chart-line" id="chartLine">
+                            <!-- Data points will be generated by JavaScript -->
                         </div>
 
-                        <div class="x-labels">
-                            <span class="x-label">Jan</span>
-                            <span class="x-label">Feb</span>
-                            <span class="x-label">Mar</span>
-                            <span class="x-label">Apr</span>
-                            <span class="x-label">May</span>
+                        <div class="x-labels" id="xLabels">
+                            {% for label in statistics.trend_labels %}
+                            <span class="x-label">{{ label }}</span>
+                            {% endfor %}
                         </div>
 
                         <div class="chart-legend">
@@ -129,15 +118,19 @@
                         <div class="pie-legend">
                             <div class="pie-legend-item">
                                 <div class="pie-color green"></div>
-                                <span class="pie-legend-text excellent">Excellent (≥90%): 50%</span>
+                                <span class="pie-legend-text excellent">Excellent (≥90%): {{ statistics.distribution.excellent }}%</span>
                             </div>
                             <div class="pie-legend-item">
                                 <div class="pie-color blue"></div>
-                                <span class="pie-legend-text good">Good (80-89%): 40%</span>
+                                <span class="pie-legend-text good">Good (80-89%): {{ statistics.distribution.good }}%</span>
                             </div>
                             <div class="pie-legend-item">
                                 <div class="pie-color orange"></div>
-                                <span class="pie-legend-text average">Average (70-79%): 10%</span>
+                                <span class="pie-legend-text average">Average (70-79%): {{ statistics.distribution.average }}%</span>
+                            </div>
+                            <div class="pie-legend-item">
+                                <div class="pie-color red"></div>
+                                <span class="pie-legend-text bad">Bad (<70%): {{ statistics.distribution.bad }}%</span>
                             </div>
                         </div>
                     </div>
@@ -284,6 +277,8 @@
         font-size: 1rem;
         cursor: pointer;
         transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
     }
 
     .time-btn.active {
@@ -413,12 +408,55 @@
         width: 250px;
         height: 250px;
         border-radius: 50%;
-        background: conic-gradient(
-            #2ecc71 0% 50%,
-            #4285f4 50% 90%,
-            #ff9800 90% 100%
-        );
         margin-bottom: 2rem;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border: 2px solid var(--primary-dark);
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .dropdown-menu-item {
+        display: block;
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        color: var(--text-dark);
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .dropdown-menu-item:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-menu-item:hover {
+        background-color: var(--primary-light);
+    }
+
+    .dropdown-menu-item.active {
+        background-color: var(--primary-dark);
+        color: white;
+    }
+
+    .dropdown-menu-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+
+    .dropdown-menu-subtitle {
+        font-size: 0.9rem;
+        opacity: 0.8;
     }
 
     .pie-legend {
@@ -453,6 +491,10 @@
         background-color: #ff9800;
     }
 
+    .pie-color.red {
+        background-color: #dc2626;
+    }
+
     .pie-legend-text {
         color: var(--text-dark);
         font-weight: 500;
@@ -468,6 +510,10 @@
 
     .average {
         color: #ff9800;
+    }
+
+    .bad {
+        color: #dc2626;
     }
 
     /* Responsive Design */
@@ -549,56 +595,173 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Statistics data from server
+        const statistics = {
+            attendance_trend: {{ (statistics.attendance_trend or []) | tojson }},
+            trend_labels: {{ (statistics.trend_labels or []) | tojson }},
+            distribution: {
+                excellent: {{ statistics.distribution.excellent if statistics.distribution else 0 }},
+                good: {{ statistics.distribution.good if statistics.distribution else 0 }},
+                average: {{ statistics.distribution.average if statistics.distribution else 0 }},
+                bad: {{ statistics.distribution.bad if statistics.distribution else 0 }}
+            }
+        };
+
         // Update time and date dynamically
         function updateDateTime() {
             const now = new Date();
-            
-            // Format time
             const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
             const time = now.toLocaleTimeString('en-US', timeOptions).toUpperCase();
-            
-            // Format date
             const dateOptions = { day: 'numeric', month: 'long', year: 'numeric' };
             const date = now.toLocaleDateString('en-US', dateOptions);
             
-            // Update display
-            document.querySelector('.time').textContent = time;
-            document.querySelector('.date').textContent = date;
+            const timeEl = document.querySelector('.time');
+            const dateEl = document.querySelector('.date');
+            if (timeEl) timeEl.textContent = time;
+            if (dateEl) dateEl.textContent = date;
         }
 
-        // Update immediately and then every minute
         updateDateTime();
         setInterval(updateDateTime, 60000);
 
-        // Notification bell click
-        document.querySelector('.notification-bell').addEventListener('click', function() {
-            alert('You have 3 new notifications');
-            // In a real app, this would show a notification dropdown
-        });
+        // Generate line chart
+        function generateLineChart() {
+            const chartLine = document.getElementById('chartLine');
+            if (!chartLine) return;
 
-        // Time toggle buttons
-        document.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                // Remove active class from all buttons
-                document.querySelectorAll('.time-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                // In a real app, this would update the chart data
-                alert(`Showing ${this.textContent} view`);
-            });
-        });
+            if (!statistics.attendance_trend || statistics.attendance_trend.length === 0) {
+                chartLine.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-light);">No attendance data available</div>';
+                return;
+            }
 
-        // Dropdown controls
-        document.querySelectorAll('.dropdown-control').forEach(dropdown => {
-            dropdown.addEventListener('click', function() {
-                // In a real app, this would show a dropdown menu
-                alert('Dropdown menu would open here');
+            const trendData = statistics.attendance_trend.filter(v => v !== null && v !== undefined);
+            if (trendData.length === 0) {
+                chartLine.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-light);">No attendance data available</div>';
+                return;
+            }
+
+            chartLine.innerHTML = '';
+            const maxValue = Math.max(...trendData, 100);
+            const minValue = Math.min(...trendData, 0);
+            const range = maxValue - minValue || 100;
+
+            const points = [];
+            const dataLength = Math.min(trendData.length, 5);
+            const stepSize = dataLength > 1 ? 100 / (dataLength - 1) : 0;
+            
+            trendData.slice(0, 5).forEach((value, index) => {
+                const topPercent = range > 0 ? 100 - ((value - minValue) / range * 100) : 50;
+                const leftPercent = dataLength > 1 ? (index * stepSize) : 50;
+                points.push(`${leftPercent}%,${topPercent}%`);
+                
+                const point = document.createElement('div');
+                point.className = 'data-point';
+                point.style.left = `${leftPercent}%`;
+                point.style.top = `${topPercent}%`;
+                point.title = `${value}%`;
+                chartLine.appendChild(point);
             });
-        });
+
+            if (points.length > 1) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('style', 'position: absolute; width: 100%; height: 100%; pointer-events: none;');
+                
+                const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                polyline.setAttribute('points', points.join(' '));
+                polyline.setAttribute('fill', 'none');
+                polyline.setAttribute('stroke', '#4285f4');
+                polyline.setAttribute('stroke-width', '2');
+                polyline.setAttribute('vector-effect', 'non-scaling-stroke');
+                svg.appendChild(polyline);
+
+                const targetPercent = 100 - ((85 - minValue) / range * 100);
+                const targetPoints = `0,${targetPercent}% 100,${targetPercent}%`;
+                const targetLine = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                targetLine.setAttribute('points', targetPoints);
+                targetLine.setAttribute('fill', 'none');
+                targetLine.setAttribute('stroke', '#4285f4');
+                targetLine.setAttribute('stroke-width', '2');
+                targetLine.setAttribute('stroke-dasharray', '5,5');
+                targetLine.setAttribute('opacity', '0.5');
+                targetLine.setAttribute('vector-effect', 'non-scaling-stroke');
+                svg.appendChild(targetLine);
+
+                chartLine.appendChild(svg);
+            }
+        }
+
+        // Generate pie chart
+        function generatePieChart() {
+            const pieChart = document.querySelector('.pie-chart');
+            if (!pieChart) return;
+
+            const dist = statistics.distribution;
+            const total = dist.excellent + dist.good + dist.average + dist.bad;
+            
+            if (total === 0) {
+                pieChart.style.background = 'conic-gradient(#e0e0e0 0% 100%)';
+                return;
+            }
+
+            const excellentPercent = (dist.excellent / total) * 100;
+            const goodPercent = (dist.good / total) * 100;
+            const averagePercent = (dist.average / total) * 100;
+            const badPercent = (dist.bad / total) * 100;
+
+            let gradient = '';
+            let currentPercent = 0;
+
+            if (dist.excellent > 0) {
+                gradient += `#2ecc71 ${currentPercent}% ${currentPercent + excellentPercent}%`;
+                currentPercent += excellentPercent;
+            }
+            if (dist.good > 0) {
+                if (gradient) gradient += ', ';
+                gradient += `#4285f4 ${currentPercent}% ${currentPercent + goodPercent}%`;
+                currentPercent += goodPercent;
+            }
+            if (dist.average > 0) {
+                if (gradient) gradient += ', ';
+                gradient += `#ff9800 ${currentPercent}% ${currentPercent + averagePercent}%`;
+                currentPercent += averagePercent;
+            }
+            if (dist.bad > 0) {
+                if (gradient) gradient += ', ';
+                gradient += `#dc2626 ${currentPercent}% ${currentPercent + badPercent}%`;
+            }
+
+            pieChart.style.background = `conic-gradient(${gradient})`;
+        }
+
+        generateLineChart();
+        generatePieChart();
+
+        // Notification bell
+        const notificationBell = document.querySelector('.notification-bell');
+        if (notificationBell) {
+            notificationBell.addEventListener('click', function() {
+                alert('You have 3 new notifications');
+            });
+        }
+
+        // Course dropdown
+        const courseDropdown = document.getElementById('courseDropdown');
+        const courseDropdownMenu = document.getElementById('courseDropdownMenu');
+        if (courseDropdown && courseDropdownMenu) {
+            courseDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = courseDropdownMenu.style.display === 'block';
+                courseDropdownMenu.style.display = isVisible ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (courseDropdown && !courseDropdown.contains(e.target)) {
+                    if (courseDropdownMenu) {
+                        courseDropdownMenu.style.display = 'none';
+                    }
+                }
+            });
+        }
     });
 </script>
 {% endblock %}
