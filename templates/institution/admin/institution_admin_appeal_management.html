@@ -59,7 +59,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="actions-cell">
-                                    <button class="btn-manage" onclick="viewAppeal({{ appeal.appeal_id }})">Review</button>
+                                    <a href="{{ url_for('institution.view_appeal', appeal_id=appeal.appeal_id) }}" class="btn-manage">Review</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -345,13 +345,6 @@
         searchInput.addEventListener('input', filterTable);
         statusFilter.addEventListener('change', filterTable);
     });
-    
-    function viewAppeal(appealId) {
-        // Placeholder for appeal review functionality
-        alert('Appeal review functionality for Appeal #' + appealId + ' will be implemented here');
-        // In production, this would navigate to a detailed appeal review page
-        // window.location.href = '/institution/manage_appeals/' + appealId + '/review';
-    }
 </script>
 
 {% endblock %}
