@@ -227,6 +227,42 @@ def institution_profile():
         }
     return render_template('institution/admin/institution_admin_institution_profile.html', **context)
 
+@institution_bp.route('/institution_profile/edit_form')
+@requires_roles('admin')
+def edit_institution_profile_form():
+    with get_session() as db_session:
+        institution_model = InstitutionModel(db_session)
+        institution_id = session.get('institution_id')
+        institution = institution_model.get_one(institution_id=institution_id)
+        institution_data = {
+            "institution_name": institution.name if institution else "",
+            "address": institution.address if institution else "",
+            "phone_number": institution.poc_phone if institution else "",
+            "point_of_contact": institution.poc_name if institution else "",
+            "email": institution.poc_email if institution else "",
+        }
+    return render_template('institution/admin/institution_admin_profile_update.html', institution=institution_data)
+
+@institution_bp.route('/institution_profile/edit', methods=['POST'])
+@requires_roles('admin')
+def edit_institution_profile():
+    with get_session() as db_session:
+        institution_model = InstitutionModel(db_session)
+        institution_id = session.get('institution_id')
+        institution = institution_model.get_one(institution_id=institution_id)
+        if not institution:
+            return abort(404)
+
+        # Update institution details from form data
+        institution.name = request.form.get('institution_name')
+        institution.address = request.form.get('address')
+        institution.poc_phone = request.form.get('phone_number')
+        institution.poc_name = request.form.get('point_of_contact')
+        institution.poc_email = request.form.get('email')
+
+        institution_model.update(institution)
+
+    return redirect(url_for('institution.institution_profile'))
 
 @institution_bp.route('/import_data')
 @requires_roles('admin')
