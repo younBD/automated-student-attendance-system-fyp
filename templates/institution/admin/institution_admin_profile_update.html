@@ -1,60 +1,69 @@
 {% extends "layouts/base.html" %}
-{% block title %}Institution Profile - AttendAI{% endblock %}
+{% block title %}Update Institution Profile - AttendAI{% endblock %}
 
 {% block content %}
 <div class="dashboard-admin">
-    <h1 class="page-title mb-4">Institution Profile</h1>
+    <h1 class="page-title mb-4">Update Institution Profile</h1>
 
     <!-- Main Card -->
     <div class="card-custom">
         <div class="card-header-custom">
-            <h2 class="institution-name">{{ institution.institution_name }}</h2>
+            <h2 class="form-title">Edit Institution Information</h2>
         </div>
         <div class="card-body-custom">
             
-            <!-- Institution Details Section -->
-            <div class="section-container mb-4">
-                <h3 class="section-title mb-3">Institution Details</h3>
-                <div class="info-box">
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">Institution Name:</span>
-                            <span class="info-value">{{ institution.institution_name }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Address:</span>
-                            <span class="info-value">{{ institution.address }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Phone Number:</span>
-                            <span class="info-value">{{ institution.phone_number }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Point of Contact Section -->
-            <div class="section-container">
-                <h3 class="section-title mb-3">Point of Contact</h3>
-                <div class="info-box">
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">Contact Name:</span>
-                            <span class="info-value">{{ institution.point_of_contact }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Contact Email:</span>
-                            <span class="info-value">{{ institution.email }}</span>
+            <form method="POST" action="{{ url_for('institution.edit_institution_profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Institution Details Section -->
+                <div class="section-container mb-4">
+                    <h3 class="section-title mb-3">Institution Details</h3>
+                    <div class="form-box">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="institution_name" class="form-label">Institution Name</label>
+                                <input type="text" id="institution_name" name="institution_name" 
+                                       class="form-input" value="{{ institution.institution_name }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="address" class="form-label">Address</label>
+                                <input type="text" id="address" name="address" 
+                                       class="form-input" value="{{ institution.address }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone_number" class="form-label">Phone Number</label>
+                                <input type="tel" id="phone_number" name="phone_number" 
+                                       class="form-input" value="{{ institution.phone_number }}" required>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Action Buttons -->
-            <div class="action-section mt-4">
-                <a href="{{ url_for('institution.institution_dashboard') }}" class="btn-custom btn-outline">Back to Dashboard</a>
-                <a href="{{ url_for('institution.edit_institution_profile_form') }}" class="btn-custom btn-primary">Update Profile</a>
-            </div>
+                <!-- Point of Contact Section -->
+                <div class="section-container mb-4">
+                    <h3 class="section-title mb-3">Point of Contact</h3>
+                    <div class="form-box">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="point_of_contact" class="form-label">Contact Name</label>
+                                <input type="text" id="point_of_contact" name="point_of_contact" 
+                                       class="form-input" value="{{ institution.point_of_contact }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" class="form-label">Contact Email</label>
+                                <input type="email" id="email" name="email" 
+                                       class="form-input" value="{{ institution.email }}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-section mt-4">
+                    <a href="{{ url_for('institution.institution_profile') }}" class="btn-custom btn-outline">Cancel</a>
+                    <button type="submit" class="btn-custom btn-primary">Save Changes</button>
+                </div>
+            </form>
 
         </div>
     </div>
@@ -104,7 +113,7 @@
         border-bottom: 2px solid #001641;
     }
 
-    .institution-name {
+    .form-title {
         font-size: 1.75rem;
         font-weight: 700;
         margin: 0;
@@ -131,26 +140,26 @@
         font-family: 'Montserrat', sans-serif;
     }
 
-    .info-box {
+    .form-box {
         background: #FFFFFF;
         border: 2px solid #001641;
         border-radius: 8px;
         padding: 1.5rem;
     }
 
-    .info-grid {
+    .form-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 1.25rem;
     }
 
-    .info-item {
+    .form-group {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
     }
 
-    .info-label {
+    .form-label {
         font-size: 0.875rem;
         font-weight: 600;
         color: #001641;
@@ -159,11 +168,27 @@
         font-family: 'Montserrat', sans-serif;
     }
 
-    .info-value {
+    .form-input {
+        padding: 0.75rem 1rem;
         font-size: 1rem;
         color: #001641;
         font-weight: 500;
         font-family: 'Montserrat', sans-serif;
+        border: 2px solid #001641;
+        border-radius: 6px;
+        background: #FFFFFF;
+        transition: all 0.2s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #001641;
+        box-shadow: 0 0 0 3px rgba(0, 22, 65, 0.1);
+    }
+
+    .form-input:hover {
+        border-color: #001641;
+        background: #f8fafc;
     }
 
     .action-section {
@@ -182,7 +207,6 @@
         text-align: center;
         text-decoration: none;
         border-radius: 6px;
-        border: none;
         cursor: pointer;
         transition: all 0.2s ease;
         font-family: 'Montserrat', sans-serif;
@@ -215,7 +239,7 @@
     }
 
     @media (max-width: 768px) {
-        .info-grid {
+        .form-grid {
             grid-template-columns: 1fr;
         }
 
@@ -229,6 +253,14 @@
 
         .section-container {
             padding: 1rem;
+        }
+
+        .action-section {
+            flex-direction: column;
+        }
+
+        .btn-custom {
+            width: 100%;
         }
     }
 </style>
