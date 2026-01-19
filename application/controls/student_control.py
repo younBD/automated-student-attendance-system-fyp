@@ -7,7 +7,7 @@ from application.entities2.course import CourseModel
 from datetime import datetime, date, timedelta
 from database.base import get_session
 from database.models import AttendanceAppealStatusEnum, AttendanceRecord
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, and_, extract
 import math
 
 class StudentControl:
@@ -179,8 +179,8 @@ class StudentControl:
         except Exception as e:
             return {'error': f'Error loading attendance data: {str(e)}', 'success': False}
     
-    def get_attendance_history(user_id):
-        """Get student attendance history"""
+    def get_attendance_history(user_id, search_query='', status_filter='', month_filter='', page=1, per_page=8):
+        """Get student attendance history with filtering and pagination"""
         try:
             with get_session() as db_session:
                 attendance_model = AttendanceRecordModel(db_session)
@@ -191,49 +191,147 @@ class StudentControl:
                 if not student:
                     return {'error': 'Student not found', 'success': False}
                 
-                # Get attendance records
-                attendance_records = attendance_model.get_by_student(user_id)
+                # Get all attendance records for the student
+                from database.models import AttendanceRecord, Class, Course, User, Venue
+                
+                # Build base query
+                base_query = (
+                    db_session.query(AttendanceRecord, Class, Course, User, Venue)
+                    .join(Class, AttendanceRecord.class_id == Class.class_id)
+                    .join(Course, Class.course_id == Course.course_id)
+                    .join(User, Class.lecturer_id == User.user_id)
+                    .join(Venue, Class.venue_id == Venue.venue_id)
+                    .filter(AttendanceRecord.student_id == user_id)
+                    .order_by(Class.start_time.desc())
+                )
+                
+                # Apply search filter
+                if search_query:
+                    search_term = f"%{search_query.lower()}%"
+                    base_query = base_query.filter(
+                        or_(
+                            Course.code.ilike(search_term),
+                            Course.name.ilike(search_term),
+                            User.name.ilike(search_term),
+                            Venue.name.ilike(search_term)
+                        )
+                    )
+                
+                # Apply status filter
+                if status_filter:
+                    base_query = base_query.filter(AttendanceRecord.status == status_filter)
+                
+                # Apply month filter (format: YYYY-MM)
+                if month_filter:
+                    try:
+                        year, month = month_filter.split('-')
+                        base_query = base_query.filter(
+                            extract('year', Class.start_time) == int(year),
+                            extract('month', Class.start_time) == int(month)
+                        )
+                    except (ValueError, AttributeError):
+                        # If month filter is invalid, ignore it
+                        pass
+                
+                # Get total count for pagination
+                total_records = base_query.count()
+                
+                # Apply pagination
+                offset = (page - 1) * per_page
+                paginated_query = base_query.offset(offset).limit(per_page)
+                
+                # Execute query
+                results = paginated_query.all()
                 
                 # Format records for display
                 formatted_records = []
-                for record in attendance_records:
-                    # Get class details
-                    with get_session() as inner_session:
-                        from database.models import Class, Course
-                        class_details = inner_session.query(Class, Course).join(
-                            Course, Class.course_id == Course.course_id
-                        ).filter(Class.class_id == record.class_id).first()
-                        
-                        if class_details:
-                            class_obj, course = class_details
-                            formatted_records.append({
-                                'date': class_obj.start_time.strftime("%Y-%m-%d"),
-                                'time': class_obj.start_time.strftime("%H:%M"),
-                                'course_code': course.code,
-                                'course_name': course.name,
-                                'status': record.status,
-                                'marked_by': record.marked_by,
-                                'recorded_at': record.recorded_at.strftime("%Y-%m-%d %H:%M") if record.recorded_at else None,
-                                'notes': record.notes
-                            })
+                for record, class_obj, course, lecturer, venue in results:
+                    # Check if appeal exists for this record
+                    appeal_exists = (
+                        db_session.query(AttendanceAppealModel(db_session).model)
+                        .filter_by(attendance_id=record.attendance_id)
+                        .first()
+                        is not None
+                    )
+                    
+                    # Determine if appeal is possible
+                    can_appeal = (
+                        record.status in ['absent', 'late'] and 
+                        not appeal_exists and
+                        (datetime.now() - class_obj.start_time).days <= 7  # Within 7 days
+                    )
+                    
+                    formatted_records.append({
+                        'attendance_id': record.attendance_id,
+                        'date_formatted': class_obj.start_time.strftime("%b %d, %Y"),
+                        'date_iso': class_obj.start_time.strftime("%Y-%m-%d"),
+                        'start_time': class_obj.start_time.strftime("%H:%M"),
+                        'end_time': class_obj.end_time.strftime("%H:%M") if class_obj.end_time else "",
+                        'course_code': course.code,
+                        'course_name': course.name,
+                        'venue': venue.name,
+                        'lecturer_name': lecturer.name,
+                        'status': record.status,
+                        'recorded_at': record.recorded_at.strftime("%Y-%m-%d %H:%M") if record.recorded_at else None,
+                        'notes': record.notes,
+                        'can_appeal': can_appeal
+                    })
                 
-                # Calculate summary
-                total_classes = len(formatted_records)
-                present_count = sum(1 for r in formatted_records if r['status'] in ['present', 'late'])
-                attendance_percentage = (present_count / total_classes * 100) if total_classes > 0 else 0
+                # Generate month filter options (last 6 months)
+                months = []
+                current_date = datetime.now()
+                for i in range(6):
+                    month_date = current_date - timedelta(days=30*i)
+                    month_value = month_date.strftime("%Y-%m")
+                    month_display = month_date.strftime("%B %Y")
+                    months.append({
+                        'value': month_value,
+                        'display': month_display
+                    })
+                
+                # Calculate pagination info
+                total_pages = math.ceil(total_records / per_page) if total_records > 0 else 1
+                start_index = offset + 1 if total_records > 0 else 0
+                end_index = min(offset + per_page, total_records)
+                
+                # Generate page numbers for pagination
+                pages = []
+                max_pages_to_show = 5
+                half_range = max_pages_to_show // 2
+                
+                if total_pages <= max_pages_to_show:
+                    pages = list(range(1, total_pages + 1))
+                else:
+                    if page <= half_range:
+                        pages = list(range(1, max_pages_to_show + 1))
+                    elif page > total_pages - half_range:
+                        pages = list(range(total_pages - max_pages_to_show + 1, total_pages + 1))
+                    else:
+                        pages = list(range(page - half_range, page + half_range + 1))
                 
                 return {
                     'success': True,
                     'student': student.as_sanitized_dict(),
-                    'summary': {
-                        'total_classes': total_classes,
-                        'present_count': present_count,
-                        'attendance_percentage': round(attendance_percentage, 1)
-                    },
-                    'records': formatted_records
+                    'records': formatted_records,
+                    'months': months,
+                    'search_query': search_query,
+                    'status_filter': status_filter,
+                    'month_filter': month_filter,
+                    'pagination': {
+                        'current_page': page,
+                        'total_pages': total_pages,
+                        'total_records': total_records,
+                        'start_index': start_index,
+                        'end_index': end_index,
+                        'pages': pages,
+                        'has_prev': page > 1,
+                        'has_next': page < total_pages
+                    }
                 }
                 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return {'error': f'Error loading attendance history: {str(e)}', 'success': False}
     
     def get_student_appeals(app, user_id, module_filter='', status_filter='', date_filter=''):
@@ -514,59 +612,15 @@ class StudentControl:
         """Get all absent records for student"""
         try:
             with get_session() as db_session:
-                attendance_model = AttendanceRecordModel(db_session)
-                user_model = UserModel(db_session)
-                
-                # Get student info
-                student = user_model.get_by_id(user_id)
-                if not student:
-                    return {'error': 'Student not found', 'success': False}
-                
-                # Get all attendance records
-                all_records = attendance_model.get_by_student(user_id)
-                
-                # Filter for absent records
-                absent_records = []
-                for record in all_records:
-                    if record.status == 'absent':
-                        # Get class details
-                        with get_session() as inner_session:
-                            from database.models import Class, Course, User as UserModelDB
-                            class_details = inner_session.query(
-                                Class, Course, UserModelDB
-                            ).join(
-                                Course, Class.course_id == Course.course_id
-                            ).join(
-                                UserModelDB, Class.lecturer_id == UserModelDB.user_id
-                            ).filter(Class.class_id == record.class_id).first()
-                            
-                            if class_details:
-                                class_obj, course, lecturer = class_details
-                                absent_records.append({
-                                    'date': class_obj.start_time.strftime("%Y-%m-%d"),
-                                    'time': class_obj.start_time.strftime("%H:%M"),
-                                    'course_code': course.code,
-                                    'course_name': course.name,
-                                    'lecturer': lecturer.name,
-                                    'recorded_at': record.recorded_at.strftime("%Y-%m-%d %H:%M") if record.recorded_at else None,
-                                    'notes': record.notes
-                                })
-                
-                # Calculate summary
-                total_absences = len(absent_records)
-                total_classes = len(all_records)
-                absence_percentage = (total_absences / total_classes * 100) if total_classes > 0 else 0
-                
-                return {
-                    'success': True,
-                    'student': student.as_sanitized_dict(),
-                    'summary': {
-                        'total_absences': total_absences,
-                        'total_classes': total_classes,
-                        'absence_percentage': round(absence_percentage, 1)
-                    },
-                    'records': absent_records
-                }
+                # Use the new get_attendance_history method with filters
+                return StudentControl.get_attendance_history(
+                    user_id=user_id,
+                    status_filter='absent',
+                    search_query='',
+                    month_filter='',
+                    page=1,
+                    per_page=100  # Large number to get all records
+                )
                 
         except Exception as e:
             return {'error': f'Error loading absent records: {str(e)}', 'success': False}

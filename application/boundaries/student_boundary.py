@@ -86,7 +86,21 @@ def attendance_history():
             flash('Please log in to view attendance history', 'warning')
             return redirect(url_for('auth.login'))
         
-        history_data = StudentControl.get_attendance_history(user_id)
+        # Get filter parameters from request
+        search_query = request.args.get('search', '')
+        status_filter = request.args.get('status', '')
+        month_filter = request.args.get('month', '')
+        page = request.args.get('page', 1, type=int)
+        
+        history_data = StudentControl.get_attendance_history(
+            user_id,
+            search_query=search_query,
+            status_filter=status_filter,
+            month_filter=month_filter,
+            page=page,
+            per_page=8
+        )
+        
         return render_template('institution/student/student_attendance_management_history.html', **history_data)
         
     except Exception as e:
