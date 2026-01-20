@@ -62,3 +62,69 @@ class TestimonialModel(BaseEntity[Testimonial]):
         
         data = query.order_by(func.random()).limit(limit).all()
         return self.add_headers(headers, data)
+    
+    def get_pending_testimonials(self):
+        """Get all pending testimonials for platform manager review"""
+        headers = ["testimonial_id", "summary", "content", "rating", "date_submitted", "user_name", "user_email", "user_role", "institution_name", "institution_id"]
+        data = (
+            self.session
+            .query(
+                Testimonial.testimonial_id,
+                Testimonial.summary,
+                Testimonial.content,
+                Testimonial.rating,
+                Testimonial.date_submitted,
+                User.name.label("user_name"),
+                User.email.label("user_email"),
+                User.role.label("user_role"),
+                Institution.name.label("institution_name"),
+                Institution.institution_id
+            )
+            .join(User, Testimonial.user_id == User.user_id)
+            .join(Institution, User.institution_id == Institution.institution_id)
+            .filter(Testimonial.status == 'pending')
+            .order_by(Testimonial.date_submitted.asc())
+            .all()
+        )
+        return self.add_headers(headers, data)
+    
+    def get_all_testimonials_with_status(self, status=None):
+        """Get all testimonials, optionally filtered by status"""
+        headers = ["testimonial_id", "summary", "content", "rating", "status", "date_submitted", "user_name", "user_email", "user_role", "institution_name", "institution_id"]
+        query = (
+            self.session
+            .query(
+                Testimonial.testimonial_id,
+                Testimonial.summary,
+                Testimonial.content,
+                Testimonial.rating,
+                Testimonial.status,
+                Testimonial.date_submitted,
+                User.name.label("user_name"),
+                User.email.label("user_email"),
+                User.role.label("user_role"),
+                Institution.name.label("institution_name"),
+                Institution.institution_id
+            )
+            .join(User, Testimonial.user_id == User.user_id)
+            .join(Institution, User.institution_id == Institution.institution_id)
+        )
+        
+        if status:
+            query = query.filter(Testimonial.status == status)
+        
+        data = query.order_by(Testimonial.date_submitted.desc()).all()
+        return self.add_headers(headers, data)
+    
+    def count_by_status(self, status):
+        """Count testimonials by status"""
+        return self.session.query(Testimonial).filter(Testimonial.status == status).count()
+    
+    def update_status(self, testimonial_id, status):
+        """Update testimonial status"""
+        testimonial = self.get_by_id(testimonial_id)
+        if testimonial:
+            testimonial.status = status
+            self.session.commit()
+            return True
+        return False

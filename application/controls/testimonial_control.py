@@ -255,10 +255,7 @@ class TestimonialControl:
                     return {'success': False, 'error': 'Testimonial not found'}
                 
                 # Update the status
-                updated = testimonial_model.update(
-                    testimonial_id=testimonial_id,
-                    status=new_status
-                )
+                updated = testimonial_model.update_status(testimonial_id, new_status)
                 
                 if not updated:
                     return {'success': False, 'error': 'Failed to update testimonial'}
