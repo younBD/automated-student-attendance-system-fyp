@@ -12,6 +12,52 @@
         </div>
     </div>
 
+    <!-- Facial Recognition Data Upload Section -->
+    <div class="card-custom mb-4">
+        <div class="card-header-custom">Facial Recognition Data Upload</div>
+        <div class="card-body-custom">
+            <p class="section-description mb-4">Upload facial recognition training data for students. Supports image files and compressed archives containing face images.</p>
+            
+            <!-- Facial Recognition Upload Area -->
+            <div class="upload-section">
+                <div class="upload-area" id="facialUploadArea">
+                    <div class="upload-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                    </div>
+                    <p class="upload-text">Click here or drag facial recognition files to upload</p>
+                    <p class="upload-subtext">Supports .jpg, .jpeg, .png, .zip files</p>
+                    <input type="file" id="facialFileInput" class="file-input" accept=".jpg,.jpeg,.png,.zip" multiple>
+                </div>
+
+                <div class="file-info mt-4" id="facialFileInfo">
+                    <div class="file-details">
+                        <div class="file-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="file-text">
+                            <p class="file-name">No file selected</p>
+                            <p class="file-size">–</p>
+                        </div>
+                        <button class="btn-custom btn-clear" id="clearFacialFile">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Facial Recognition Import Actions -->
+            <div class="import-actions mt-4">
+                <button class="btn-custom btn-import" id="facialImportButton" disabled>Upload Facial Data</button>
+            </div>
+        </div>
+    </div>
+
     <div class="card-custom">
         <div class="card-header-custom">Data Import</div>
         <div class="card-body-custom">
@@ -108,6 +154,14 @@
     .breadcrumb span {
         color: var(--text-dark);
         font-weight: 500;
+    }
+
+    /* Section Description */
+    .section-description {
+        color: var(--text-light);
+        font-size: 0.95rem;
+        line-height: 1.6;
+        text-align: center;
     }
 
     /* Import Selector */
@@ -347,11 +401,21 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // ===== FACIAL RECOGNITION UPLOAD SECTION =====
+        const facialUploadArea = document.getElementById('facialUploadArea');
+        const facialFileInput = document.getElementById('facialFileInput');
+        const facialFileInfo = document.getElementById('facialFileInfo');
+        const facialFileName = facialFileInfo.querySelector('.file-name');
+        const facialFileSize = facialFileInfo.querySelector('.file-size');
+        const clearFacialFileBtn = document.getElementById('clearFacialFile');
+        const facialImportButton = document.getElementById('facialImportButton');
+
+        // ===== REGULAR DATA IMPORT SECTION =====
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.querySelector('.file-name');
-        const fileSize = document.querySelector('.file-size');
+        const fileName = fileInfo.querySelector('.file-name');
+        const fileSize = fileInfo.querySelector('.file-size');
         const clearFileBtn = document.getElementById('clearFile');
         const importButton = document.getElementById('importButton');
         const importType = document.getElementById('importType');
@@ -365,11 +429,92 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
+        // ===== FACIAL RECOGNITION HANDLERS =====
+        
+        // Update facial file info display
+        function updateFacialFileInfo(files) {
+            if (files.length > 0) {
+                const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+                
+                facialFileName.textContent = files.length === 1 ? files[0].name : `${files.length} files selected`;
+                facialFileSize.textContent = formatFileSize(totalSize);
+                facialFileInfo.classList.add('visible');
+                facialImportButton.disabled = false;
+            }
+        }
+
+        // Click to upload facial data
+        facialUploadArea.addEventListener('click', () => {
+            facialFileInput.click();
+        });
+
+        // Facial file input change
+        facialFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                updateFacialFileInfo(e.target.files);
+            }
+        });
+
+        // Facial drag and drop
+        facialUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            facialUploadArea.classList.add('dragover');
+        });
+
+        facialUploadArea.addEventListener('dragleave', () => {
+            facialUploadArea.classList.remove('dragover');
+        });
+
+        facialUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            facialUploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                facialFileInput.files = e.dataTransfer.files;
+                updateFacialFileInfo(e.dataTransfer.files);
+            }
+        });
+
+        // Clear facial file
+        clearFacialFileBtn.addEventListener('click', () => {
+            facialFileInput.value = '';
+            facialFileInfo.classList.remove('visible');
+            facialFileName.textContent = 'No file selected';
+            facialFileSize.textContent = '–';
+            facialImportButton.disabled = true;
+        });
+
+        // Facial import button click
+        facialImportButton.addEventListener('click', () => {
+            if (facialFileInput.files.length === 0) {
+                alert('Please select facial recognition files to upload.');
+                return;
+            }
+
+            // Here you would typically submit the form via AJAX
+            alert(`Starting upload of ${facialFileInput.files.length} facial recognition file(s)...`);
+            
+            // Simulate upload process
+            facialImportButton.textContent = 'Uploading...';
+            facialImportButton.disabled = true;
+            
+            setTimeout(() => {
+                alert('Facial recognition data uploaded successfully!');
+                facialImportButton.textContent = 'Upload Facial Data';
+                facialImportButton.disabled = true;
+                facialFileInput.value = '';
+                facialFileInfo.classList.remove('visible');
+                facialFileName.textContent = 'No file selected';
+                facialFileSize.textContent = '–';
+            }, 2000);
+        });
+
+        // ===== REGULAR DATA IMPORT HANDLERS =====
+        
         // Update file info display
         function updateFileInfo(files) {
             if (files.length > 0) {
                 const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
-                const fileNames = Array.from(files).map(f => f.name).join(', ');
                 
                 fileName.textContent = files.length === 1 ? files[0].name : `${files.length} files selected`;
                 fileSize.textContent = formatFileSize(totalSize);
