@@ -1,0 +1,163 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Testimonial Review - Platform Manager{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-4">Testimonial Review</h2>
+        
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Pending</h5>
+                        <h2 class="text-warning">{{ stats.pending }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Approved</h5>
+                        <h2 class="text-success">{{ stats.approved }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-danger">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-muted">Rejected</h5>
+                        <h2 class="text-danger">{{ stats.rejected }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link {% if status_filter == 'pending' %}active{% endif %}" 
+                   href="{{ url_for('platform.testimonial_review', status='pending') }}">
+                    Pending ({{ stats.pending }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if status_filter == 'approved' %}active{% endif %}" 
+                   href="{{ url_for('platform.testimonial_review', status='approved') }}">
+                    Approved ({{ stats.approved }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if status_filter == 'rejected' %}active{% endif %}" 
+                   href="{{ url_for('platform.testimonial_review', status='rejected') }}">
+                    Rejected ({{ stats.rejected }})
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if status_filter == 'all' %}active{% endif %}" 
+                   href="{{ url_for('platform.testimonial_review', status='all') }}">
+                    All
+                </a>
+            </li>
+        </ul>
+
+        <!-- Testimonials List -->
+        {% if testimonials %}
+            <div class="row">
+                {% for testimonial in testimonials %}
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ testimonial.user_name }}</strong>
+                                <span class="badge bg-info ms-2">{{ testimonial.user_role|title }}</span>
+                                <span class="badge bg-secondary ms-1">{{ testimonial.institution_name }}</span>
+                            </div>
+                            <div>
+                                {% if testimonial.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif testimonial.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif testimonial.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <strong>Rating:</strong>
+                                {% for i in range(testimonial.rating) %}
+                                    <span class="text-warning">★</span>
+                                {% endfor %}
+                                {% for i in range(5 - testimonial.rating) %}
+                                    <span class="text-muted">★</span>
+                                {% endfor %}
+                                <span class="ms-2">({{ testimonial.rating }}/5)</span>
+                            </div>
+                            
+                            {% if testimonial.summary %}
+                            <div class="mb-2">
+                                <strong>Summary:</strong>
+                                <p class="mb-2" style="word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; max-width: 100%;">{{ testimonial.summary }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mb-2">
+                                <strong>Content:</strong>
+                                <p class="mb-2" style="word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; max-width: 100%;">{{ testimonial.content }}</p>
+                            </div>
+                            
+                            <div class="text-muted small">
+                                <strong>Email:</strong> {{ testimonial.user_email }} | 
+                                <strong>Submitted:</strong> {{ testimonial.date_submitted.strftime('%Y-%m-%d %H:%M') if testimonial.date_submitted else 'N/A' }}
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <div class="btn-group" role="group">
+                                {% if testimonial.status == 'pending' %}
+                                <form method="post" 
+                                      action="{{ url_for('platform.approve_testimonial', testimonial_id=testimonial.testimonial_id) }}" 
+                                      style="display:inline" 
+                                      onsubmit="return confirm('Approve this testimonial from {{ testimonial.user_name }}?')">
+                                    <button class="btn btn-success btn-sm" type="submit">
+                                        <i class="bi bi-check-circle"></i> Approve
+                                    </button>
+                                </form>
+                                
+                                <form method="post" 
+                                      action="{{ url_for('platform.reject_testimonial', testimonial_id=testimonial.testimonial_id) }}" 
+                                      style="display:inline" 
+                                      class="ms-2"
+                                      onsubmit="return confirm('Reject this testimonial from {{ testimonial.user_name }}?')">
+                                    <button class="btn btn-danger btn-sm" type="submit">
+                                        <i class="bi bi-x-circle"></i> Reject
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                <form method="post" 
+                                      action="{{ url_for('platform.delete_testimonial', testimonial_id=testimonial.testimonial_id) }}" 
+                                      style="display:inline" 
+                                      class="ms-2"
+                                      onsubmit="return confirm('Permanently delete this testimonial from {{ testimonial.user_name }}? This action cannot be undone.')">
+                                    <button class="btn btn-outline-danger btn-sm" type="submit">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No testimonials found for this filter.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

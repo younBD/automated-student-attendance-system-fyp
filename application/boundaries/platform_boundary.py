@@ -3,9 +3,11 @@ from datetime import datetime, timedelta
 
 from application.controls.auth_control import AuthControl, requires_roles, requires_roles_api
 from application.controls.platform_control import PlatformControl
+from application.controls.testimonial_control import TestimonialControl
 from application.entities.base_entity import BaseEntity
 from application.entities2.institution import InstitutionModel
 from application.entities2.subscription import SubscriptionModel
+from application.entities2.testimonial import TestimonialModel
 from application.entities2.user import UserModel
 from database.base import get_session
 from database.models import User
@@ -60,11 +62,7 @@ def pending_registrations():
 @requires_roles('platform_manager')
 def approve_registration(subscription_id):
     """Approve a pending registration request"""
-    auth_result = AuthControl.verify_session(current_app, session)
-    if not auth_result['success'] or auth_result['user'].get('user_type') != 'platform_manager':
-        return jsonify({'success': False, 'error': 'Access denied'}), 403
-
-    reviewer_id = auth_result['user'].get('user_id')
+    reviewer_id = session.get('user_id')
     
     # Use PlatformControl to handle the approval
     result = PlatformControl.approve_subscription(
@@ -83,11 +81,7 @@ def approve_registration(subscription_id):
 @requires_roles('platform_manager')
 def reject_registration(subscription_id):
     """Reject a pending registration request"""
-    auth_result = AuthControl.verify_session(current_app, session)
-    if not auth_result['success'] or auth_result['user'].get('user_type') != 'platform_manager':
-        return jsonify({'success': False, 'error': 'Access denied'}), 403
-
-    reviewer_id = auth_result['user'].get('user_id')
+    reviewer_id = session.get('user_id')
     
     # Use PlatformControl to handle the rejection
     result = PlatformControl.reject_subscription(
@@ -365,6 +359,96 @@ def performance_management():
 def settings_management():
     """Platform manager - settings"""
     return render_template('platmanager/platform_manager_settings_management.html')
+
+@platform_bp.route('/testimonials')
+@requires_roles('platform_manager')
+def testimonial_review():
+    """Platform manager - testimonial review and approval"""
+    status_filter = request.args.get('status', 'pending')
+    
+    with get_session() as session:
+        testimonial_model = TestimonialModel(session)
+        
+        # Get testimonials based on filter
+        if status_filter == 'all':
+            testimonials_data = testimonial_model.get_all_testimonials_with_status()
+        else:
+            testimonials_data = testimonial_model.get_all_testimonials_with_status(status=status_filter)
+        
+        # Get counts for each status
+        stats = {
+            'pending': testimonial_model.count_by_status('pending'),
+            'approved': testimonial_model.count_by_status('approved'),
+            'rejected': testimonial_model.count_by_status('rejected'),
+        }
+        
+        context = {
+            'testimonials': testimonials_data,
+            'stats': stats,
+            'status_filter': status_filter,
+        }
+    
+    return render_template('platmanager/platform_manager_testimonial_approve.html', **context)
+
+@platform_bp.route('/testimonials/approve/<int:testimonial_id>', methods=['POST'])
+@requires_roles('platform_manager')
+def approve_testimonial(testimonial_id):
+    """Approve a testimonial"""
+    reviewer_id = session.get('user_id')
+    
+    result = TestimonialControl.update_testimonial_status(
+        app=current_app,
+        testimonial_id=testimonial_id,
+        new_status='approved',
+        reviewer_id=reviewer_id
+    )
+    
+    if result.get('success'):
+        flash('Testimonial approved successfully.', 'success')
+    else:
+        flash(result.get('error', 'Failed to approve testimonial'), 'danger')
+    
+    return redirect(url_for('platform.testimonial_review'))
+
+@platform_bp.route('/testimonials/reject/<int:testimonial_id>', methods=['POST'])
+@requires_roles('platform_manager')
+def reject_testimonial(testimonial_id):
+    """Reject a testimonial"""
+    reviewer_id = session.get('user_id')
+    
+    result = TestimonialControl.update_testimonial_status(
+        app=current_app,
+        testimonial_id=testimonial_id,
+        new_status='rejected',
+        reviewer_id=reviewer_id
+    )
+    
+    if result.get('success'):
+        flash('Testimonial rejected.', 'success')
+    else:
+        flash(result.get('error', 'Failed to reject testimonial'), 'danger')
+    
+    return redirect(url_for('platform.testimonial_review'))
+
+@platform_bp.route('/testimonials/delete/<int:testimonial_id>', methods=['POST'])
+@requires_roles('platform_manager')
+def delete_testimonial(testimonial_id):
+    """Delete a testimonial"""
+    user_id = session.get('user_id')
+    
+    result = TestimonialControl.delete_testimonial(
+        app=current_app,
+        testimonial_id=testimonial_id,
+        user_id=user_id,
+        is_admin=True
+    )
+    
+    if result.get('success'):
+        flash('Testimonial deleted successfully.', 'success')
+    else:
+        flash(result.get('error', 'Failed to delete testimonial'), 'danger')
+    
+    return redirect(url_for('platform.testimonial_review'))
 
 @platform_bp.route('/create')
 @requires_roles('platform_manager')
