@@ -22,6 +22,14 @@ PROFANITY_LIST = [
     'stupid', 'dumb', 'moron', 'imbecile'
 ]
 
+# Concerning words that suggest inappropriate surveillance or privacy violations
+CONCERNING_WORDS = [
+    'stalk', 'stalking', 'stalker', 'spy', 'spying', 'creep', 'creepy',
+    'big brother', 'invasion', 'violate', 'violation', 'intrusive',
+    'invade privacy', 'privacy invasion', 'surveillance state', 
+    'tracking us', 'monitoring us', 'watching us', 'spies on'
+]
+
 class TestimonialControl:
     """Control class for testimonial business logic"""
     
@@ -61,6 +69,20 @@ class TestimonialControl:
         
         contains_profanity = len(found_profanity) > 0
         
+        # Check for concerning words/phrases
+        found_concerning = []
+        for phrase in CONCERNING_WORDS:
+            # For multi-word phrases, search as-is; for single words use word boundaries
+            if ' ' in phrase:
+                if phrase in text_lower:
+                    found_concerning.append(phrase)
+            else:
+                pattern = r'\b' + re.escape(phrase) + r'\b'
+                if re.search(pattern, text_lower, re.IGNORECASE):
+                    found_concerning.append(phrase)
+        
+        contains_concerning = len(found_concerning) > 0
+        
         # Perform sentiment analysis
         sentiment_scores = sentiment_analyzer.polarity_scores(full_text)
         compound_score = sentiment_scores['compound']
@@ -69,8 +91,9 @@ class TestimonialControl:
         # Compound score ranges from -1 (most negative) to +1 (most positive)
         # Reject if:
         # 1. Contains profanity
-        # 2. Sentiment is very negative (compound < -0.5)
-        # 3. Negative sentiment is dominant (neg > 0.5)
+        # 2. Contains concerning words about privacy/surveillance
+        # 3. Sentiment is very negative (compound < -0.5)
+        # 4. Negative sentiment is dominant (neg > 0.5)
         
         is_appropriate = True
         reason = None
@@ -78,6 +101,9 @@ class TestimonialControl:
         if contains_profanity:
             is_appropriate = False
             reason = f"Contains inappropriate language: {', '.join(found_profanity)}"
+        elif contains_concerning:
+            is_appropriate = False
+            reason = f"Contains concerning content about privacy/surveillance: {', '.join(found_concerning)}"
         elif compound_score < -0.5:
             is_appropriate = False
             reason = f"Overly negative sentiment detected (score: {compound_score:.2f})"
@@ -91,7 +117,9 @@ class TestimonialControl:
             'sentiment_score': compound_score,
             'sentiment_details': sentiment_scores,
             'contains_profanity': contains_profanity,
-            'profanity_found': found_profanity
+            'profanity_found': found_profanity,
+            'contains_concerning': contains_concerning,
+            'concerning_found': found_concerning
         }
     
     @staticmethod
