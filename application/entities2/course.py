@@ -15,9 +15,10 @@ class CourseModel(BaseEntity[Course]):
             .join(User, User.user_id == CourseUser.user_id)
             .filter(Course.institution_id == institution_id)
             .filter(User.role == "lecturer")
+            .distinct()
         )
         if course_id:
-            q.filter(Course.course_id == course_id)
+            q = q.filter(Course.course_id == course_id)
         return q.all()
 
     def get_by_user_id(self, user_id):
