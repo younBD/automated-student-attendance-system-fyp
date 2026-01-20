@@ -831,6 +831,21 @@
                             <option value="2026-12">December 2026</option>
                         {% endif %}
                     </select>
+                    <select class="filter-select" id="venueFilter">
+                        <option value="">All Venues</option>
+                        {% if venues %}
+                            {% for venue in venues %}
+                                <option value="{{ venue.venue_id }}" {% if venue_filter == venue.venue_id|string %}selected{% endif %}>
+                                    {{ venue.name }}
+                                </option>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Default venues if not provided -->
+                            <option value="1">Main Hall</option>
+                            <option value="2">Room 101</option>
+                            <option value="3">Lab A</option>
+                        {% endif %}
+                    </select>
                     <button class="btn-custom btn-outline-custom btn-reset" id="resetFilters">Reset Filters</button>
                 </div>
             </div>
@@ -896,7 +911,7 @@
                 </div>
                 <div class="pagination-controls">
                     {% if pagination.current_page > 1 %}
-                        <a href="{{ url_for('student.attendance_history', page=pagination.current_page-1, search=search_query, status=status_filter, month=month_filter) }}" 
+                        <a href="{{ url_for('student.attendance_history', page=pagination.current_page-1, search=search_query, status=status_filter, month=month_filter, venue=venue_filter) }}" 
                            class="btn-custom btn-outline-custom btn-prev">Previous</a>
                     {% else %}
                         <button class="btn-custom btn-outline-custom btn-prev" disabled>Previous</button>
@@ -907,14 +922,14 @@
                             {% if page_num == pagination.current_page %}
                                 <span class="page-current">{{ page_num }}</span>
                             {% else %}
-                                <a href="{{ url_for('student.attendance_history', page=page_num, search=search_query, status=status_filter, month=month_filter) }}" 
+                                <a href="{{ url_for('student.attendance_history', page=page_num, search=search_query, status=status_filter, month=month_filter, venue=venue_filter) }}" 
                                    class="page-link">{{ page_num }}</a>
                             {% endif %}
                         {% endfor %}
                     </span>
                     
                     {% if pagination.current_page < pagination.total_pages %}
-                        <a href="{{ url_for('student.attendance_history', page=pagination.current_page+1, search=search_query, status=status_filter, month=month_filter) }}" 
+                        <a href="{{ url_for('student.attendance_history', page=pagination.current_page+1, search=search_query, status=status_filter, month=month_filter, venue=venue_filter) }}" 
                            class="btn-custom btn-outline-custom btn-next">Next</a>
                     {% else %}
                         <button class="btn-custom btn-outline-custom btn-next" disabled>Next</button>
@@ -951,6 +966,10 @@
             if (monthFilter.value) {
                 params.set('month', monthFilter.value);
             }
+
+            if (venueFilter.value) {
+                params.set('venue', venueFilter.value);
+            }
             
             // Keep page parameter if present
             const currentPage = new URLSearchParams(window.location.search).get('page');
@@ -984,6 +1003,7 @@
         
         statusFilter.addEventListener('change', applyFilters);
         monthFilter.addEventListener('change', applyFilters);
+        venueFilter.addEventListener('change', applyFilters);
         resetButton.addEventListener('click', resetFilters);
         
         if (clearAllFiltersButton) {

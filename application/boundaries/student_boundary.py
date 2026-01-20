@@ -103,6 +103,7 @@ def attendance_history():
         search_query = request.args.get('search', '')
         status_filter = request.args.get('status', '')
         month_filter = request.args.get('month', '')
+        venue_filter = request.args.get('venue', '')
         page = request.args.get('page', 1, type=int)
         
         history_data = StudentControl.get_attendance_history(
@@ -110,6 +111,7 @@ def attendance_history():
             search_query=search_query,
             status_filter=status_filter,
             month_filter=month_filter,
+            venue_filter=venue_filter,
             page=page,
             per_page=8
         )

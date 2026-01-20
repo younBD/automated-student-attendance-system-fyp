@@ -182,18 +182,18 @@ class StudentControl:
         except Exception as e:
             return {'error': f'Error loading attendance data: {str(e)}', 'success': False}
     
-    def get_attendance_history(user_id, search_query='', status_filter='', month_filter='', page=1, per_page=8):
+    def get_attendance_history(user_id, search_query='', status_filter='', month_filter='', venue_filter='', page=1, per_page=8):
         """Get student attendance history with filtering and pagination"""
         try:
             with get_session() as db_session:
                 attendance_model = AttendanceRecordModel(db_session)
                 user_model = UserModel(db_session)
-                
+            
                 # Get student info
                 student = user_model.get_by_id(user_id)
                 if not student:
                     return {'error': 'Student not found', 'success': False}
-                
+            
                 # Build base query
                 base_query = (
                     db_session.query(AttendanceRecord, Class, Course, User, Venue)
@@ -204,7 +204,7 @@ class StudentControl:
                     .filter(AttendanceRecord.student_id == user_id)
                     .order_by(Class.start_time.desc())
                 )
-                
+            
                 # Apply search filter
                 if search_query:
                     search_term = f"%{search_query.lower()}%"
@@ -216,11 +216,10 @@ class StudentControl:
                             Venue.name.ilike(search_term)
                         )
                     )
-                
                 # Apply status filter
                 if status_filter:
                     base_query = base_query.filter(AttendanceRecord.status == status_filter)
-                
+            
                 # Apply month filter (format: YYYY-MM)
                 if month_filter:
                     try:
@@ -232,17 +231,21 @@ class StudentControl:
                     except (ValueError, AttributeError):
                         # If month filter is invalid, ignore it
                         pass
-                
+            
+                # Apply venue filter
+                if venue_filter:
+                    base_query = base_query.filter(Venue.venue_id == venue_filter)
+            
                 # Get total count for pagination
                 total_records = base_query.count()
-                
+            
                 # Apply pagination
                 offset = (page - 1) * per_page
                 paginated_query = base_query.offset(offset).limit(per_page)
-                
+            
                 # Execute query
                 results = paginated_query.all()
-                
+            
                 # Format records for display
                 formatted_records = []
                 for record, class_obj, course, lecturer, venue in results:
@@ -253,14 +256,14 @@ class StudentControl:
                         .first()
                         is not None
                     )
-                    
+                
                     # Determine if appeal is possible
                     can_appeal = (
                         record.status in ['absent', 'late'] and 
                         not appeal_exists and
                         (datetime.now() - class_obj.start_time).days <= 7  # Within 7 days
                     )
-                    
+                
                     formatted_records.append({
                         'attendance_id': record.attendance_id,
                         'date_formatted': class_obj.start_time.strftime("%b %d, %Y"),
@@ -270,13 +273,14 @@ class StudentControl:
                         'course_code': course.code,
                         'course_name': course.name,
                         'venue': venue.name,
+                        'venue_id': venue.venue_id,
                         'lecturer_name': lecturer.name,
                         'status': record.status,
                         'recorded_at': record.recorded_at.strftime("%Y-%m-%d %H:%M") if record.recorded_at else None,
                         'notes': record.notes,
                         'can_appeal': can_appeal
                     })
-                
+            
                 # Generate month filter options (last 6 months)
                 months = []
                 current_date = datetime.now()
@@ -288,17 +292,30 @@ class StudentControl:
                         'value': month_value,
                         'display': month_display
                     })
-                
+            
+                # Generate venue filter options
+                venues = (
+                    db_session.query(Venue)
+                    .join(Class, Class.venue_id == Venue.venue_id)
+                    .join(AttendanceRecord, AttendanceRecord.class_id == Class.class_id)
+                    .filter(AttendanceRecord.student_id == user_id)
+                    .distinct()
+                    .order_by(Venue.name)
+                    .all()
+                )
+            
+                venue_options = [{'venue_id': venue.venue_id, 'name': venue.name} for venue in venues]
+            
                 # Calculate pagination info
                 total_pages = math.ceil(total_records / per_page) if total_records > 0 else 1
                 start_index = offset + 1 if total_records > 0 else 0
                 end_index = min(offset + per_page, total_records)
-                
+            
                 # Generate page numbers for pagination
                 pages = []
                 max_pages_to_show = 5
                 half_range = max_pages_to_show // 2
-                
+            
                 if total_pages <= max_pages_to_show:
                     pages = list(range(1, total_pages + 1))
                 else:
@@ -308,19 +325,21 @@ class StudentControl:
                         pages = list(range(total_pages - max_pages_to_show + 1, total_pages + 1))
                     else:
                         pages = list(range(page - half_range, page + half_range + 1))
-                
+            
                 return {
                     'success': True,
                     'student': student.as_sanitized_dict(),
                     'records': formatted_records,
                     'months': months,
+                    'venues': venue_options,
                     'search_query': search_query,
                     'status_filter': status_filter,
                     'month_filter': month_filter,
+                    'venue_filter': venue_filter,
                     'pagination': {
                         'current_page': page,
                         'total_pages': total_pages,
-                        'total_records': total_records,
+                       'total_records': total_records,
                         'start_index': start_index,
                         'end_index': end_index,
                         'pages': pages,
@@ -328,12 +347,12 @@ class StudentControl:
                         'has_next': page < total_pages
                     }
                 }
-                
+            
         except Exception as e:
             import traceback
             traceback.print_exc()
             return {'error': f'Error loading attendance history: {str(e)}', 'success': False}
-    
+
     def get_student_appeals(app, user_id, module_filter='', status_filter='', date_filter=''):
         """Get student appeals with filtering options"""
         try:
