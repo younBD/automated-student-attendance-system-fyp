@@ -19,13 +19,6 @@ def auth():
     """Main dashboard route"""
     return render_template('dashboard.html')
 
-@auth_bp.route('/profile')
-@requires_roles('student' or 'lecturer' or 'admin' or 'platform_manager')
-def profile():
-    """User profile route"""
-    return render_template('components/profile.html')
-
-
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Login route (GET shows form, POST authenticates)"""

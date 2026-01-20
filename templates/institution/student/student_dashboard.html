@@ -777,10 +777,6 @@
                             <span class="link-icon">📊</span>
                             <span class="link-text">My Attendance</span>
                         </a>
-                        <a href="#" class="link-item" id="checkInLink">
-                            <span class="link-icon">📱</span>
-                            <span class="link-text">Class Check-In</span>
-                        </a>
                         <a href="{{ url_for('student.appeal_management') }}" class="link-item">
                             <span class="link-icon">📝</span>
                             <span class="link-text">Submit Appeal</span>
@@ -872,22 +868,6 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(`Viewing details for ${classCode}\n\nClass ID: ${classId}`);
         });
     });
-    
-    // Check-in quick link
-    const checkInLink = document.getElementById('checkInLink');
-    if (checkInLink) {
-        checkInLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Find the first upcoming class to check into
-            const upcomingClass = document.querySelector('.class-item:not(.completed) .btn-checkin');
-            if (upcomingClass) {
-                upcomingClass.click();
-            } else {
-                alert('No upcoming classes available for check-in.');
-            }
-        });
-    }
     
     // Add click handlers for class items (like lecturer dashboard)
     document.querySelectorAll('.class-item').forEach(item => {

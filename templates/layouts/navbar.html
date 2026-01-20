@@ -39,9 +39,9 @@
               <li><a class="nav-link-custom" href="{{ url_for('student.attendance') }}">View My Attendance</a></li>
               <li><a class="nav-link-custom" href="{{ url_for('student.dashboard') }}">View Inbox</a></li>
               <li><a class="nav-link-custom" href="{{ url_for('student.appeal_management') }}">Attendance Appeal</a></li>
+              <li><a class="nav-link-custom" href="{{ url_for('student.profile') }}">Profile</a></li>
           {% endif %}
           
-          <li><a class="nav-link-custom" href="{{ url_for('auth.profile') }}">Profile</a></li>
           <li><a class="nav-link-custom" href="{{ url_for('auth.logout') }}">Logout</a></li>
       {% else %}
           <!-- Public navigation -->
