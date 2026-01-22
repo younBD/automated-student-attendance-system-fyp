@@ -61,3 +61,4 @@ Werkzeug == 3.0.1
 Flask-WTF == 1.2.2
 scikit-learn           
 pandas                
+vaderSentiment>=3.3.2
