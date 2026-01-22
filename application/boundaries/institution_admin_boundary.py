@@ -69,6 +69,66 @@ def manage_users():
                            suspended_count=suspended_count
                            )
 
+@institution_bp.route('/manage_users/add', methods=['GET'])
+@requires_roles('admin')
+def add_user_form():
+    """Display form to add a new user (student or lecturer only)"""
+    return render_template('institution/admin/institution_admin_add_user.html')
+
+@institution_bp.route('/manage_users/add', methods=['POST'])
+@requires_roles('admin')
+def add_user():
+    """Create a new user (student or lecturer only)"""
+    from application.controls.auth_control import hash_password
+    
+    role = request.form.get('role')
+    
+    # Restrict to student and lecturer roles only
+    if role not in ['student', 'lecturer']:
+        flash('Only students and lecturers can be added.', 'error')
+        return redirect(url_for('institution.add_user_form'))
+    
+    name = request.form.get('name')
+    email = request.form.get('email')
+    password = request.form.get('password')
+    age = request.form.get('age')
+    gender = request.form.get('gender')
+    phone_number = request.form.get('phone_number')
+    institution_id = session.get('institution_id')
+    
+    # Validate required fields
+    if not all([name, email, password, role]):
+        flash('Name, email, password, and role are required.', 'error')
+        return redirect(url_for('institution.add_user_form'))
+    
+    with get_session() as db_session:
+        user_model = UserModel(db_session)
+        
+        # Check if email already exists
+        existing_user = user_model.get_by_email(email)
+        if existing_user:
+            flash('A user with this email already exists.', 'error')
+            return redirect(url_for('institution.add_user_form'))
+        
+        try:
+            # Create new user
+            user_model.create(
+                institution_id=institution_id,
+                role=role,
+                name=name,
+                email=email,
+                password_hash=hash_password(password),
+                age=int(age) if age else None,
+                gender=gender if gender else None,
+                phone_number=phone_number if phone_number else None,
+                is_active=True
+            )
+            flash(f'{role.capitalize()} account created successfully.', 'success')
+            return redirect(url_for('institution.manage_users'))
+        except Exception as e:
+            flash(f'Error creating user: {str(e)}', 'error')
+            return redirect(url_for('institution.add_user_form'))
+
 @institution_bp.route('/manage_users/<int:user_id>/suspend', methods=['POST'])
 @requires_roles('admin')
 def suspend_user(user_id):
