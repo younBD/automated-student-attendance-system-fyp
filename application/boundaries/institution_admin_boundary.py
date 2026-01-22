@@ -556,6 +556,42 @@ def update_user_details(user_id):
         )
     return redirect(url_for('institution.view_user_details', user_id=user_id))
 
+@institution_bp.route('/manage_users/<int:user_id>/account_settings', methods=['POST'])
+@requires_roles('admin')
+def update_user_account_settings(user_id):
+    """Update account settings including suspension status and password"""
+    from application.controls.auth_control import hash_password
+    
+    with get_session() as db_session:
+        user_model = UserModel(db_session)
+        user = user_model.get_by_id(user_id)
+        
+        # Security check: prevent editing admins and users from other institutions
+        if user.role == 'admin' or user.institution_id != session.get('institution_id'):
+            flash('You cannot edit this user.', 'error')
+            return abort(401)
+        
+        action = request.form.get('action')
+        
+        if action == 'suspend':
+            user_model.suspend(user_id)
+            flash('User account has been suspended.', 'success')
+        elif action == 'unsuspend':
+            user_model.unsuspend(user_id)
+            flash('User account has been unsuspended.', 'success')
+        elif action == 'update':
+            # Handle password update
+            new_password = request.form.get('new_password', '').strip()
+            if new_password:
+                # Hash the new password
+                password_hash = hash_password(new_password)
+                user_model.update(user_id, password_hash=password_hash)
+                flash('Password has been updated successfully.', 'success')
+            else:
+                flash('No changes were made.', 'info')
+    
+    return redirect(url_for('institution.view_user_details', user_id=user_id))
+
 @institution_bp.route('/manage_appeals')
 @requires_roles('admin')
 def manage_appeals():
